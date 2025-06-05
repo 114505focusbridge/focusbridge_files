@@ -60,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Center(child: Text('個人頁面（暫未實作）', style: TextStyle(fontSize: 18))),
             // index = 4：設定頁 (會由 onTap 跳轉，IndexedStack 上不顯示)
             Center(child: Text('設定頁面（已跳轉）', style: TextStyle(fontSize: 18))),
-            // index = 5：情緒紀錄頁 (暫留白)
-            Center(child: Text('情緒紀錄頁面（暫未實作）', style: TextStyle(fontSize: 18))),
+            // index = 5：占位 (實際點擊時會跳轉，不在 IndexedStack 顯示)
+            Container(),
           ],
         ),
       ),
@@ -77,7 +77,13 @@ class _HomeScreenState extends State<HomeScreen> {
           if (index == 4) {
             // 按到「設定」時，跳轉到 SettingsScreen
             Navigator.pushNamed(context, '/settings');
-            // 保持 _currentIndex 不變，避免 IndexedStack 跳到 index=4
+            return;
+          }
+          if (index == 5) {
+            // 按到「相簿」時，跳轉到 AlbumScreen，並回來時保持在首頁
+            Navigator.pushNamed(context, '/album').then((_) {
+              setState(() => _currentIndex = 0);
+            });
             return;
           }
           // 其他 index 則更新選中狀態
