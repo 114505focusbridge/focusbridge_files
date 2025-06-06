@@ -12,7 +12,8 @@ import 'package:focusbridge_app/screens/diary_entry_screen.dart';
 import 'package:focusbridge_app/screens/post_entry_screen.dart';
 import 'package:focusbridge_app/screens/forgot_password_screen.dart';
 import 'package:focusbridge_app/screens/reset_password_screen.dart';
-import 'package:focusbridge_app/screens/settings_screen.dart'; // <- 加入 SettingsScreen
+import 'package:focusbridge_app/screens/settings_screen.dart';
+import 'package:focusbridge_app/screens/album_screen.dart'; // <- 加入 AlbumScreen
 
 void main() {
   runApp(const MyApp());
@@ -38,9 +39,10 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
           '/home': (context) => const HomeScreen(),
-          '/settings': (context) => const SettingsScreen(), // <- 新增設定頁路由
+          '/settings': (context) => const SettingsScreen(),
           '/color_picker': (context) => const ColorPickerScreen(),
           '/diary_entry': (context) => const DiaryEntryScreen(),
+          '/album': (context) => const AlbumScreen(), // <- 已新增 AlbumScreen
           '/post_entry': (context) => const PostEntryScreen(
                 emotionLabel: '',
                 emotionColor: Colors.transparent,
