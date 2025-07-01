@@ -3,8 +3,8 @@
 from rest_framework import generics, viewsets, permissions, status, authentication
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from .models import MoodLog
-from .serializers import UserRegisterSerializer, MoodLogSerializer
+from .models import MoodLog, MoodImage
+from .serializers import UserRegisterSerializer, MoodLogSerializer, MoodImageSerializer
 
 class RegisterAPIView(generics.CreateAPIView):
     """
@@ -91,3 +91,7 @@ class MoodLogViewSet(viewsets.ModelViewSet):
         if not user or not user.is_authenticated:
             return MoodLog.objects.none()
         return MoodLog.objects.filter(user=user)
+
+class MoodImageViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = MoodImage.objects.all()
+    serializer_class = MoodImageSerializer
