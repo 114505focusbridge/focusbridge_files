@@ -1,6 +1,7 @@
 // lib/screens/post_entry_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:focusbridge_app/widgets/app_bottom_nav.dart'; // ← 新增
 
 class PostEntryScreen extends StatelessWidget {
   final String emotionLabel;
@@ -44,7 +45,7 @@ class PostEntryScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '今天是：「$emotionLabel」',
+                        '今天是：「\$emotionLabel」',
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
@@ -199,6 +200,7 @@ class PostEntryScreen extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0), // ← 加入底部導航
     );
   }
 }
