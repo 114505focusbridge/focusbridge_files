@@ -2,7 +2,7 @@
 
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import MoodLog
+from .models import MoodLog, MoodImage
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """
@@ -54,3 +54,8 @@ class MoodLogSerializer(serializers.ModelSerializer):
         model = MoodLog
         fields = ['id', 'user', 'date', 'score', 'note']
         read_only_fields = ['id', 'date', 'user']
+
+class MoodImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MoodImage
+        fields = ['id', 'name', 'image']  # image 是圖片的路徑

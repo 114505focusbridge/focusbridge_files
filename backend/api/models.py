@@ -4,32 +4,18 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class MoodLog(models.Model):
-    """
-    一個範例模型：使用者每日心情日誌（MoodLog）。
-    - user: 關聯到 Django 內建的 User 模型
-    - date: 自動填入建立日期
-    - score: 情緒分數（1~10）
-    - note: 可選的文字描述
-    """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mood_logs')
+    password = models.CharField(max_length=100,)
     date = models.DateField(auto_now_add=True)
-    score = models.PositiveSmallIntegerField(default=5)
-    note = models.TextField(blank=True)
+    Tot_Hours = models.IntegerField(default=0)
+    Tot_Exp = models.IntegerField(default=0)
 
     class Meta:
-        db_table="moodlog"
-
-# 使用者
-class User(models.Model):
-    User_Name = models.CharField(max_length=100)
-    User_Password = models.CharField(max_length=100)
-    Signup_Date = models.DateField()
-    Tot_Hours = models.IntegerField()
-    Tot_Exp = models.IntegerField()
+        ordering = ['-date']  # 預設依日期倒序排列
 
     def __str__(self):
-        return self.User_Name
-
+        return f"{self.user.username} - {self.date} - {self.score}"
+    
 # 成就
 class Achievement(models.Model):
     ach_title = models.CharField(max_length=100)
@@ -47,18 +33,26 @@ class Goal(models.Model):
 
 # 相簿和照片
 class Album(models.Model):
-    album_name = models.CharField(max_length=100)
+    title = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.album_name
+        return self.title
 
 class Photo(models.Model):
     image = models.ImageField(upload_to='photos/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    album = models.ForeignKey(
+        Album,
+        on_delete=models.SET_NULL,
+        null=True,  # 允許照片不屬於任何相簿
+        blank=True,
+        related_name='photos'
+    )
 
-class AlbumPhoto(models.Model):
-    album = models.ForeignKey(Album, on_delete=models.CASCADE)
-    photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
-
+    def __str__(self):
+        return f"Photo {self.id}"
+    
 # 每週任務
 class WeeklyMission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -91,14 +85,25 @@ class ExpLog(models.Model):
     special_date = models.ForeignKey(SpecialDate, on_delete=models.SET_NULL, null=True)
     current_total = models.IntegerField()
 
+#情緒圖片
+class MoodImage(models.Model):
+    name = models.CharField(max_length=50) 
+    image = models.ImageField(upload_to='mood_images/')
+    
 # 情緒紀錄
 class MoodEntry(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField()
-    weather_icon = models.CharField(max_length=50)
-    color_mix = models.CharField(max_length=50)
+    weather_icon = models.ForeignKey(
+        MoodImage,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='diary_entries')
+    color_mix = models.ImageField(upload_to='MoodEntry/')
     emotion_tag = models.CharField(max_length=50)
     note = models.TextField()
+
+
 
 # 日記
 class DiaryTitle(models.Model):
@@ -113,5 +118,3 @@ class Diary(models.Model):
     diary_title = models.ForeignKey(DiaryTitle, on_delete=models.CASCADE)
     content = models.TextField()
 
-def __str__(self):
-    return f"{self.user.username} - {self.date} - {self.score}"
