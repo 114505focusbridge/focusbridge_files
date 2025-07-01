@@ -1,6 +1,7 @@
 // lib/screens/color_picker_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:focusbridge_app/widgets/app_bottom_nav.dart'; // ← 新增
 
 class ColorPickerScreen extends StatelessWidget {
   const ColorPickerScreen({super.key});
@@ -23,7 +24,7 @@ class ColorPickerScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '幫你的「$emotionLabel」\n填自己的情緒顏色吧！',
+          '幫你的「\$emotionLabel」\n填自己的情緒顏色吧！',
           textAlign: TextAlign.center,
         ),
         backgroundColor: const Color(0xFF9CAF88),
@@ -35,12 +36,7 @@ class ColorPickerScreen extends StatelessWidget {
           color: Colors.white,
           height: 1.3,
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        automaticallyImplyLeading: false, // 隱藏返回箭頭
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -76,6 +72,7 @@ class ColorPickerScreen extends StatelessWidget {
           },
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0), // ← 加入共用導航
     );
   }
 }

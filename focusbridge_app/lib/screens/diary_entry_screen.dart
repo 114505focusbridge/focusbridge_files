@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:focusbridge_app/screens/post_entry_screen.dart'; // 引入 PostEntryScreen
+import 'package:focusbridge_app/screens/post_entry_screen.dart';
+import 'package:focusbridge_app/widgets/app_bottom_nav.dart'; // ← 新增
 
 class DiaryEntryScreen extends StatefulWidget {
   const DiaryEntryScreen({super.key});
@@ -67,25 +68,17 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
   }
 
   String _formatChineseDate(DateTime dt) {
-    final String ymd = DateFormat('yyyy年MM月dd日').format(dt);
-    final weekdays = [
-      '星期日',
-      '星期一',
-      '星期二',
-      '星期三',
-      '星期四',
-      '星期五',
-      '星期六'
+    final ymd = DateFormat('yyyy年MM月dd日').format(dt);
+    const weekdays = [
+      '星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'
     ];
-    final String weekday = weekdays[dt.weekday % 7];
-    return '$ymd $weekday';
+    final weekday = weekdays[dt.weekday % 7];
+    return '\$ymd \$weekday';
   }
 
   Future<void> _saveEntryAndNavigate() async {
     final content = _controller.text.trim();
-    // TODO: 這裡可以把 (emotionLabel, selectedColor, content) 存到本機或呼叫後端
-    // 假設存檔成功後，才做導航
-    // await AuthService.saveEntry(...);
+    // TODO: 儲存到後端或本機
 
     Navigator.push(
       context,
@@ -108,7 +101,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
             Text(_formattedDate, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 4),
             Text(
-              '今天是：「$_emotionLabel」',
+              '今天是："$_emotionLabel"',
               style: const TextStyle(fontSize: 14),
             ),
           ],
@@ -116,6 +109,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
         backgroundColor: const Color(0xFF9CAF88),
         centerTitle: true,
         toolbarHeight: 80,
+        automaticallyImplyLeading: false, // 移除返回按鈕
       ),
       body: SafeArea(
         child: Padding(
@@ -167,6 +161,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 2), // ← 插入共用導航, index=2(月曆)
     );
   }
 }
