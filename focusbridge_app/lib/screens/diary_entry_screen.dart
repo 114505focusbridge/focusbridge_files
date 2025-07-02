@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:focusbridge_app/screens/post_entry_screen.dart';
-import 'package:focusbridge_app/widgets/app_bottom_nav.dart'; // ← 新增
+import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
 
 class DiaryEntryScreen extends StatefulWidget {
   const DiaryEntryScreen({super.key});
@@ -22,10 +22,8 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
-
     final now = DateTime.now();
     _formattedDate = _formatChineseDate(now);
-
     _emotionLabel = '';
     _selectedColor = Colors.blue.shade200;
   }
@@ -73,13 +71,11 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
       '星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'
     ];
     final weekday = weekdays[dt.weekday % 7];
-    return '\$ymd \$weekday';
+    return '$ymd $weekday';
   }
 
   Future<void> _saveEntryAndNavigate() async {
     final content = _controller.text.trim();
-    // TODO: 儲存到後端或本機
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -109,7 +105,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
         backgroundColor: const Color(0xFF9CAF88),
         centerTitle: true,
         toolbarHeight: 80,
-        automaticallyImplyLeading: false, // 移除返回按鈕
+        automaticallyImplyLeading: false,
       ),
       body: SafeArea(
         child: Padding(
@@ -152,7 +148,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
                     ),
                   ),
                   child: const Text(
-                    '存入心情存摟',
+                    '存入心情存摺',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
@@ -161,7 +157,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 2), // ← 插入共用導航, index=2(月曆)
+      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
     );
   }
 }
