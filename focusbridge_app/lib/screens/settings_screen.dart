@@ -87,7 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       // 使用共用底部導航
-      bottomNavigationBar: const AppBottomNav(currentIndex: _settingsIndex),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
     );
   }
 }
