@@ -3,12 +3,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
-from .views import RegisterAPIView, LogoutView, MoodLogViewSet, MoodImageViewSet
+from .views import RegisterAPIView, LogoutView, MoodLogViewSet, DiaryViewSet, PhotoViewSet
 
 # 建立 DRF 的 DefaultRouter，並註冊 MoodLogViewSet
 router = DefaultRouter()
 router.register(r'moodlogs', MoodLogViewSet, basename='moodlog')
-router.register(r'moodimage', MoodImageViewSet)
+router.register(r'diaries',DiaryViewSet,basename='diary')
+router.register(r'photos',PhotoViewSet,basename='photo')
+
 
 urlpatterns = [
     # 1. 使用者註冊：POST /api/auth/register/

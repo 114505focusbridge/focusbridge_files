@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import MoodLog, Achievement, Goal, Album, Photo, WeeklyMission, PositiveEmotionLog, SpecialDate, ExpLog, MoodImage, MoodEntry, Diary, DiaryTitle
+from .models import MoodLog, Achievement, Goal,Album, Photo,  WeeklyMission, PositiveEmotionLog, SpecialDate, ExpLog, MoodImage, MoodEntry, Diary, DiaryTitle
 
 admin.site.register(MoodLog)
 admin.site.register(Achievement)

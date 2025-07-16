@@ -3,7 +3,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:focusbridge_app/widgets/app_bottom_nav.dart'; // 共用導航
+import 'package:focusbridge_app/widgets/app_bottom_nav.dart';  // 共用導航
+import 'package:focusbridge_app/services/photo_service.dart';   // 新增：引入 PhotoService
 
 class AlbumScreen extends StatefulWidget {
   const AlbumScreen({super.key});
@@ -18,7 +19,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
     '快樂', '憤怒', '悲傷', '恐懼', '驚訝', '厭惡',
   ];
 
-  // 各情緒對應的照片列表
+  // 各情緒對應的照片列表（File）
   late final Map<String, List<File>> _emotionAlbums;
   final ImagePicker _picker = ImagePicker();
 
@@ -30,10 +31,28 @@ class _AlbumScreenState extends State<AlbumScreen> {
 
   Future<void> _addPhoto(String emotion) async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
+    if (picked == null) return;
+
+    final file = File(picked.path);
+    // 1) 先在本機 UI 中加入預覽
+    setState(() {
+      _emotionAlbums[emotion]!.add(file);
+    });
+
+    // 2) 再呼叫後端上傳
+    try {
+      await PhotoService.uploadPhoto(imageFile: file);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('📤 照片上傳成功'))
+      );
+    } catch (e) {
+      // 上傳失敗時從畫面移除預覽，並提示錯誤
       setState(() {
-        _emotionAlbums[emotion]!.add(File(picked.path));
+        _emotionAlbums[emotion]!.remove(file);
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('⚠️ 照片上傳失敗：$e'))
+      );
     }
   }
 
@@ -137,7 +156,8 @@ class _AlbumScreenState extends State<AlbumScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 5) // 對應「個人」索引, // 修正為相簿索引=4
+      // 修正：相簿索引應為 4
+      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
     );
   }
 
@@ -172,7 +192,10 @@ class _AlbumScreenState extends State<AlbumScreen> {
                     child: Container(
                       width: 100,
                       height: 100,
-                      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: const Center(child: Icon(Icons.add, size: 32, color: Colors.black54)),
                     ),
                   );
@@ -196,7 +219,10 @@ class _AlbumScreenState extends State<AlbumScreen> {
             content: const Text('確定要刪除此照片？'),
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-              ElevatedButton(onPressed: () { Navigator.pop(context); _removePhoto(emotion, idx); }, child: const Text('刪除')),
+              ElevatedButton(onPressed: () {
+                Navigator.pop(context);
+                _removePhoto(emotion, idx);
+              }, child: const Text('刪除')),
             ],
           ),
         );

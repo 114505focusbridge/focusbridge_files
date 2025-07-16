@@ -8,7 +8,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: 之後可由 Provider 動態取得
+    // TODO: 未來可由 Provider/後端取得動態使用者資料
     const avatarUrl = 'https://via.placeholder.com/150';
     const userName = 'Evan Fang';
     const userHandle = '@fang.tonxue';
@@ -76,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     IconButton(
                       onPressed: () {
-                        // TODO: 購買商店
+                        // TODO: 前往商店購買
                       },
                       icon: const Icon(Icons.shopping_cart_outlined),
                     ),
@@ -87,11 +87,12 @@ class ProfileScreen extends StatelessWidget {
 
               // 工具按鈕
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildToolButton(context, Icons.center_focus_strong, '專注'),
-                  _buildToolButton(context, Icons.self_improvement, '冥想'),
-                  _buildToolButton(context, Icons.favorite, '呼吸'),
+                  _buildToolButton(context, Icons.center_focus_strong, '專注', '/focus'),
+                  const SizedBox(width: 8),
+                  _buildToolButton(context, Icons.self_improvement, '冥想', '/meditation'),
+                  const SizedBox(width: 8),
+                  _buildToolButton(context, Icons.favorite, '呼吸', '/breathing'),
                 ],
               ),
             ],
@@ -102,16 +103,16 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// 建構工具按鈕
-  Widget _buildToolButton(BuildContext context, IconData icon, String label) {
+  /// 建構工具按鈕，點擊後導航到指定 ROUTE
+  Widget _buildToolButton(
+      BuildContext context,
+      IconData icon,
+      String label,
+      String routeName,
+  ) {
     return Expanded(
       child: ElevatedButton(
-        onPressed: () {
-          // TODO: 實作各小工具功能
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$label 功能暫未實作')),
-          );
-        },
+        onPressed: () => Navigator.pushNamed(context, routeName),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green.shade100,
           shape: RoundedRectangleBorder(

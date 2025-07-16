@@ -9,6 +9,7 @@ class AuthService {
   // 比如：'http://127.0.0.1:8000' 或 'http://192.168.0.100:8000'
   static const String baseUrl = 'http://10.0.2.2:8000';
 
+  
   /// 註冊：呼叫後端 POST /api/auth/register/
   /// 成功時回傳 Map，裡面包含 'username'、'email'、'token' 等欄位
   static Future<Map<String, dynamic>> register({
