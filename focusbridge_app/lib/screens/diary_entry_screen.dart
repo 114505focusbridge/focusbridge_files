@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:focusbridge_app/screens/post_entry_screen.dart';
 import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
+import 'package:focusbridge_app/services/diary_service.dart';
 
 class DiaryEntryScreen extends StatefulWidget {
   const DiaryEntryScreen({super.key});
@@ -17,6 +18,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
   late Color _selectedColor;
   late TextEditingController _controller;
   late String _formattedDate;
+  bool _isLoading = false; // 用來控制按鈕 loading 與禁用
 
   @override
   void initState() {
@@ -36,8 +38,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
       _emotionLabel = args['emotion'] as String;
       _selectedColor = args['color'] as Color;
     }
-    final now = DateTime.now();
-    _formattedDate = _formatChineseDate(now);
+    _formattedDate = _formatChineseDate(DateTime.now());
   }
 
   @override
@@ -76,16 +77,35 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
 
   Future<void> _saveEntryAndNavigate() async {
     final content = _controller.text.trim();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PostEntryScreen(
-          emotionLabel: _emotionLabel,
-          emotionColor: _selectedColor,
-          entryContent: content,
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('請先輸入今日心情內容')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 呼叫後端 API 儲存日記
+      await DiaryService.createDiary(content: content);
+
+      // 成功後再導頁
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PostEntryScreen(
+            emotionLabel: _emotionLabel,
+            emotionColor: _selectedColor,
+            entryContent: content,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      //處理錯誤
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -109,7 +129,8 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -140,17 +161,22 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
               SizedBox(
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: _saveEntryAndNavigate,
+                  onPressed:
+                      _isLoading ? null : _saveEntryAndNavigate, // 防重複點擊
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF9CAF88),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  child: const Text(
-                    '存入心情存摺',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : const Text(
+                          '存入心情存摺',
+                          style: TextStyle(fontSize: 18),
+                        ),
                 ),
               ),
             ],

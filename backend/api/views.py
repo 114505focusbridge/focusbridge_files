@@ -3,8 +3,8 @@
 from rest_framework import generics, viewsets, permissions, status, authentication
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from .models import MoodLog, MoodImage
-from .serializers import UserRegisterSerializer, MoodLogSerializer, MoodImageSerializer
+from .models import MoodLog, Diary, Photo
+from .serializers import UserRegisterSerializer, MoodLogSerializer, DiarySerializer, PhotoSerializer
 
 class RegisterAPIView(generics.CreateAPIView):
     """
@@ -92,6 +92,15 @@ class MoodLogViewSet(viewsets.ModelViewSet):
             return MoodLog.objects.none()
         return MoodLog.objects.filter(user=user)
 
-class MoodImageViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = MoodImage.objects.all()
-    serializer_class = MoodImageSerializer
+class DiaryViewSet(viewsets.ModelViewSet):
+    queryset = Diary.objects.all()
+    serializer_class = DiarySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class PhotoViewSet(viewsets.ModelViewSet):
+    queryset = Photo.objects.all()
+    serializer_class = PhotoSerializer
+    permission_classes = [permissions.IsAuthenticated]

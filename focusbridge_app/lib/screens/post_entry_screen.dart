@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:focusbridge_app/widgets/app_bottom_nav.dart'; // ← 新增
+import 'package:focusbridge_app/services/diary_service.dart';
+
 
 class PostEntryScreen extends StatelessWidget {
   final String emotionLabel;

@@ -2,7 +2,7 @@
 
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import MoodLog, MoodImage
+from .models import MoodLog, Diary, Photo
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """
@@ -55,7 +55,14 @@ class MoodLogSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'date', 'score', 'note']
         read_only_fields = ['id', 'date', 'user']
 
-class MoodImageSerializer(serializers.ModelSerializer):
+class DiarySerializer(serializers.ModelSerializer):
     class Meta:
-        model = MoodImage
-        fields = ['id', 'name', 'image']  # image 是圖片的路徑
+        model = Diary
+        fields = ['id', 'content', 'created_at']
+        read_only_fields = ['created_at']
+        
+class PhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = ['id', 'image', 'uploaded_at', 'album']
+        read_only_fields = ['id', 'uploaded_at']

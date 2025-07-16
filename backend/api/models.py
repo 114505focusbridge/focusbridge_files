@@ -33,11 +33,11 @@ class Goal(models.Model):
 
 # 相簿和照片
 class Album(models.Model):
-    title = models.CharField(max_length=100)
+    album_name = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        return self.album_name
 
 class Photo(models.Model):
     image = models.ImageField(upload_to='photos/')
@@ -114,7 +114,6 @@ class DiaryTitle(models.Model):
 
 class Diary(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    day = models.DateField()
-    diary_title = models.ForeignKey(DiaryTitle, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
     content = models.TextField()
 

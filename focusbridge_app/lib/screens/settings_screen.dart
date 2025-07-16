@@ -65,7 +65,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             children: [
               const SizedBox(height: 8),
-              _buildButton('偏好設置', _showComingSoon),
+              _buildButton('偏好設置', () {
+                Navigator.pushNamed(context, '/preferences');
+              }),
               _buildButton('個人資料', _showComingSoon),
               _buildButton('通知', _showComingSoon),
               _buildButton('音效', _showComingSoon),

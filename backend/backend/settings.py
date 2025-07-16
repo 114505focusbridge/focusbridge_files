@@ -149,14 +149,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 11. Django REST framework 相關設定（可視需求自行擴充）
 # -------------------------------------------------------------------
 REST_FRAMEWORK = {
-    # 預設認證方式可以自行調整為 Token 或 JWT
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',   # ← 新增
+        # 'rest_framework.authentication.SessionAuthentication', # 可視需要留或拿掉
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',           # 只允許已認證的用戶
     ],
 }
+
 
 # -------------------------------------------------------------------
 # 12. 其他自訂設定（例如：檔案大小、上傳限制等）

@@ -1,5 +1,5 @@
 # backend/backend/urls.py
-
+from rest_framework.authtoken.views import obtain_auth_token
 from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
@@ -20,4 +20,6 @@ urlpatterns = [
 
     # 將所有以 /api/ 開頭的請求轉到 api 應用的路由設定
     path('api/', include('api.urls')),
+    # … 其他路由 …
+    path('api/auth/token/', obtain_auth_token, name='api-token-auth'),
 ]
