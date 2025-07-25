@@ -1,17 +1,14 @@
 // lib/screens/home_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:focusbridge_app/providers/auth_provider.dart';
 import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
 
+/// 主畫面：情緒格子 + 凸起動畫導航列
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('主頁'),
@@ -40,14 +37,15 @@ class HomeScreen extends StatelessWidget {
                   crossAxisSpacing: 16,
                   childAspectRatio: 1,
                   children: [
-                    for (int i = 0; i < 3; i++)
-                      _buildTextEmotionCircle(_emotionLabels[i], context),
-                    for (int i = 0; i < 3; i++)
-                      _buildIconEmotionCircle(_emotionIcons[i], _emotionLabels[i], context),
-                    for (int i = 3; i < 6; i++)
-                      _buildTextEmotionCircle(_emotionLabels[i], context),
-                    for (int i = 3; i < 6; i++)
-                      _buildIconEmotionCircle(_emotionIcons[i], _emotionLabels[i], context),
+                    // 文字情緒按鈕
+                    for (var label in _emotionLabels)
+                      _TextEmotionCircle(label),
+                    // 圖示情緒按鈕
+                    for (var i = 0; i < _emotionIcons.length; i++)
+                      _IconEmotionCircle(
+                        _emotionIcons[i],
+                        _emotionLabels[i],
+                      ),
                   ],
                 ),
               ),
@@ -61,13 +59,13 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// 第一列 & 第三列：情緒文字標籤
+// 文字標籤
 const List<String> _emotionLabels = [
   '快樂', '憤怒', '悲傷',
   '恐懼', '驚訝', '厭惡',
 ];
 
-// 第二列 & 第四列：情緒圖示資源路徑
+// 圖示資源
 const List<String> _emotionIcons = [
   'assets/images/emotion_sun.png',
   'assets/images/emotion_tornado.png',
@@ -77,54 +75,53 @@ const List<String> _emotionIcons = [
   'assets/images/emotion_rain.png',
 ];
 
-/// 建構「文字情緒圓形」點擊後帶 emotionLabel 跳轉
-Widget _buildTextEmotionCircle(String emotionLabel, BuildContext context) {
-  return GestureDetector(
-    onTap: () {
-      Navigator.pushNamed(
-        context,
-        '/color_picker',
-        arguments: emotionLabel,
-      );
-    },
-    child: Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF9CAF88),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        emotionLabel,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
+/// 文字圓形按鈕
+class _TextEmotionCircle extends StatelessWidget {
+  final String label;
+  const _TextEmotionCircle(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/color_picker', arguments: label);
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF9CAF88),
+          shape: BoxShape.circle,
         ),
-        textAlign: TextAlign.center,
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+          textAlign: TextAlign.center,
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
-/// 建構「圖示情緒圓形」點擊後帶 emotionLabel 跳轉
-Widget _buildIconEmotionCircle(String assetPath, String emotionLabel, BuildContext context) {
-  return GestureDetector(
-    onTap: () {
-      Navigator.pushNamed(
-        context,
-        '/color_picker',
-        arguments: emotionLabel,
-      );
-    },
-    child: Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        shape: BoxShape.circle,
+/// 圖示圓形按鈕
+class _IconEmotionCircle extends StatelessWidget {
+  final String assetPath;
+  final String label;
+  const _IconEmotionCircle(this.assetPath, this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/color_picker', arguments: label);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          shape: BoxShape.circle,
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Image.asset(assetPath, fit: BoxFit.contain),
       ),
-      padding: const EdgeInsets.all(12),
-      child: Image.asset(
-        assetPath,
-        fit: BoxFit.contain,
-      ),
-    ),
-  );
+    );
+  }
 }

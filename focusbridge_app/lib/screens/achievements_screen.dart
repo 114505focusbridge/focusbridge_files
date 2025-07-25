@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:focusbridge_app/models/achievement.dart';
 import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
 
+
 class AchievementsScreen extends StatelessWidget {
   const AchievementsScreen({super.key});
 
@@ -94,7 +95,7 @@ class AchievementsScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 1), // achievements 索引
+      bottomNavigationBar: AppBottomNav(currentIndex: 1), // achievements 索引
     );
   }
 

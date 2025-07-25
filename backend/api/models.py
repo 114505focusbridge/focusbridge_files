@@ -1,11 +1,9 @@
-# api/models.py
-
 from django.db import models
 from django.contrib.auth.models import User
 
 class MoodLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mood_logs')
-    password = models.CharField(max_length=100,)
+    password = models.CharField(max_length=100)
     date = models.DateField(auto_now_add=True)
     Tot_Hours = models.IntegerField(default=0)
     Tot_Exp = models.IntegerField(default=0)
@@ -14,9 +12,8 @@ class MoodLog(models.Model):
         ordering = ['-date']  # 預設依日期倒序排列
 
     def __str__(self):
-        return f"{self.user.username} - {self.date} - {self.score}"
-    
-# 成就
+        return f"{self.user.username} - {self.date} - Exp:{self.Tot_Exp} Hours:{self.Tot_Hours}"
+
 class Achievement(models.Model):
     ach_title = models.CharField(max_length=100)
     ach_content = models.TextField()
@@ -25,13 +22,14 @@ class Achievement(models.Model):
     def __str__(self):
         return self.ach_title
 
-# 達成成就
 class Goal(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     ach = models.ForeignKey(Achievement, on_delete=models.CASCADE)
     ach_time = models.DateTimeField()
 
-# 相簿和照片
+    def __str__(self):
+        return f"{self.user.username} achieved {self.ach} at {self.ach_time}"
+
 class Album(models.Model):
     album_name = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -40,27 +38,45 @@ class Album(models.Model):
         return self.album_name
 
 class Photo(models.Model):
-    image = models.ImageField(upload_to='photos/')
+    # 定義情緒選項
+    EMOTION_CHOICES = [
+        ('快樂', '快樂'),
+        ('憤怒', '憤怒'),
+        ('悲傷', '悲傷'),
+        ('恐懼', '恐懼'),
+        ('驚訝', '驚訝'),
+        ('厭惡', '厭惡'),
+    ]
+
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='photos')
+    emotion = models.CharField(
+        max_length=10,
+        choices=EMOTION_CHOICES,
+        default='快樂',  # 預設值，避免遷移時需手動指定
+    )
+    image = models.ImageField(upload_to='photos/%Y/%m/%d/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
     album = models.ForeignKey(
         Album,
         on_delete=models.SET_NULL,
-        null=True,  # 允許照片不屬於任何相簿
+        null=True,
         blank=True,
         related_name='photos'
     )
 
     def __str__(self):
-        return f"Photo {self.id}"
-    
-# 每週任務
+        return f"Photo {self.id} ({self.emotion})"
+
 class WeeklyMission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     mission = models.TextField()
     is_completed = models.BooleanField(default=False)
     complete_time = models.DateTimeField(null=True, blank=True)
 
-# 正向情緒標籤
+    def __str__(self):
+        status = 'Done' if self.is_completed else 'Pending'
+        return f"{self.user.username}: {self.mission} - {status}"
+
 class PositiveEmotionLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField()
@@ -68,7 +84,9 @@ class PositiveEmotionLog(models.Model):
     description = models.TextField()
     source_event = models.TextField()
 
-# 特別日期
+    def __str__(self):
+        return f"{self.user.username} - {self.emotion_type} @ {self.date}"
+
 class SpecialDate(models.Model):
     date_name = models.CharField(max_length=100)
     date = models.DateField()
@@ -76,7 +94,6 @@ class SpecialDate(models.Model):
     def __str__(self):
         return self.date_name
 
-# 經驗值
 class ExpLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     get_exp_time = models.DateTimeField()
@@ -85,12 +102,16 @@ class ExpLog(models.Model):
     special_date = models.ForeignKey(SpecialDate, on_delete=models.SET_NULL, null=True)
     current_total = models.IntegerField()
 
-#情緒圖片
+    def __str__(self):
+        return f"{self.user.username} +{self.get_exp} @ {self.get_exp_time}"
+
 class MoodImage(models.Model):
-    name = models.CharField(max_length=50) 
+    name = models.CharField(max_length=50)
     image = models.ImageField(upload_to='mood_images/')
-    
-# 情緒紀錄
+
+    def __str__(self):
+        return self.name
+
 class MoodEntry(models.Model):
     date = models.DateField()
     weather_icon = models.ForeignKey(
@@ -98,14 +119,15 @@ class MoodEntry(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='diary_entries')
+        related_name='diary_entries'
+    )
     color_mix = models.ImageField(upload_to='MoodEntry/')
     emotion_tag = models.CharField(max_length=50)
     note = models.TextField()
 
+    def __str__(self):
+        return f"{self.date} - {self.emotion_tag}"
 
-
-# 日記
 class DiaryTitle(models.Model):
     title = models.CharField(max_length=100)
 
@@ -117,3 +139,5 @@ class Diary(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     content = models.TextField()
 
+    def __str__(self):
+        return f"Diary {self.id} by {self.user.username} @ {self.created_at}"

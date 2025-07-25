@@ -99,7 +99,7 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 3),
+      bottomNavigationBar: AppBottomNav(currentIndex: 3),
     );
   }
 

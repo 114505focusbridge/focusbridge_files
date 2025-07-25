@@ -68,7 +68,7 @@ class _FocusScreenState extends State<FocusScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
+      bottomNavigationBar: AppBottomNav(currentIndex: 0),
     );
   }
 }

@@ -59,7 +59,7 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
           Text(_phase, style: const TextStyle(fontSize: 24)),
         ]),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
+      bottomNavigationBar: AppBottomNav(currentIndex: 2),
     );
   }
 }

@@ -62,7 +62,7 @@ class _MeditationScreenState extends State<MeditationScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
+      bottomNavigationBar: AppBottomNav(currentIndex: 1),
     );
   }
 }
