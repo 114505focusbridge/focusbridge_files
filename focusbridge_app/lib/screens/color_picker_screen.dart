@@ -72,7 +72,7 @@ class ColorPickerScreen extends StatelessWidget {
           },
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 0), // ← 加入共用導航
+      bottomNavigationBar: AppBottomNav(currentIndex: 2), // ← 加入共用導航
     );
   }
 }

@@ -1,54 +1,79 @@
 // lib/services/photo_service.dart
-import 'dart:convert';   
+
+import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PhotoService {
-  static const String baseUrl = 'http://10.0.2.2:8000'; // 或你的區網 IP
+  static const String baseUrl = 'http://10.0.2.2:8000';
 
-  /// 上傳照片檔案到後端 /api/photos/
-  /// imageFile: 實體或模擬器上的 File，path 是 local file path
-  static Future<void> uploadPhoto({ required File imageFile }) async {
-    // 1. 讀 token
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    if (token == null) {
-      throw Exception('尚未登入，無法新增相片');
-    }
-
-    // 2. 建 MultipartRequest
-    final uri = Uri.parse('$baseUrl/api/photos/');
-    final req = http.MultipartRequest('POST', uri)
-      ..headers['Authorization'] = 'Token $token'
-      // 3. 把檔案加進去 field 名稱要對應 serializers 裡的 ImageField 名稱，通常是 'image'
-      ..files.add(await http.MultipartFile.fromPath('image', imageFile.path));
-
-    // 4. 發送
-    final rsp = await req.send();
-
-    // 5. 檢查結果
-    if (rsp.statusCode != 201) {
-      final body = await rsp.stream.bytesToString();
-      throw Exception('新增相片失敗：$body');
+  /// 使用者登入，取得 token 並儲存
+  static Future<void> login({
+    required String username,
+    required String password,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/auth/token/');
+    final rsp = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': password}),
+    );
+    if (rsp.statusCode == 200) {
+      final token = jsonDecode(rsp.body)['token'] as String;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', token);
+    } else {
+      throw Exception('登入失敗：${rsp.body}');
     }
   }
 
-  /// 取得所有照片列表
+  /// 上傳照片到後端 /api/photos/，需先登入取得 token
+  static Future<void> uploadPhoto({
+    required File imageFile,
+    required String emotion,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) {
+      throw Exception('尚未登入，請先呼叫 PhotoService.login');
+    }
+
+    final uri = Uri.parse('$baseUrl/api/photos/');
+    final req = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Token $token'
+      ..fields['emotion'] = emotion
+      ..files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path),
+      );
+
+    final rsp = await req.send();
+    final body = await rsp.stream.bytesToString();
+    if (rsp.statusCode != 201) {
+      throw Exception('新增相片失敗 (狀態碼 ${rsp.statusCode})：$body');
+    }
+  }
+
+  /// 取得所有照片列表，需先登入
   static Future<List<Map<String, dynamic>>> fetchPhotos() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    if (token == null) throw Exception('尚未登入');
+    if (token == null) {
+      throw Exception('尚未登入，請先呼叫 PhotoService.login');
+    }
 
     final uri = Uri.parse('$baseUrl/api/photos/');
-    final rsp = await http.get(uri, headers: {
-      'Authorization': 'Token $token',
-    });
+    final rsp = await http.get(
+      uri,
+      headers: {'Authorization': 'Token $token'},
+    );
 
     if (rsp.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(jsonDecode(rsp.body));
+      // 使用 utf8 解碼，以正確處理中文
+      final bodyString = utf8.decode(rsp.bodyBytes);
+      return List<Map<String, dynamic>>.from(jsonDecode(bodyString));
     } else {
-      throw Exception('取得相片失敗：${rsp.body}');
+      throw Exception('取得相片失敗 (狀態碼 ${rsp.statusCode})：${rsp.body}');
     }
   }
 }

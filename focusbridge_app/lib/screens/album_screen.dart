@@ -3,8 +3,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:focusbridge_app/widgets/app_bottom_nav.dart';  // 共用導航
-import 'package:focusbridge_app/services/photo_service.dart';   // 新增：引入 PhotoService
+import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
+import 'package:focusbridge_app/services/photo_service.dart';
 
 class AlbumScreen extends StatefulWidget {
   const AlbumScreen({super.key});
@@ -14,226 +14,167 @@ class AlbumScreen extends StatefulWidget {
 }
 
 class _AlbumScreenState extends State<AlbumScreen> {
-  // 與 HomeScreen 同步的情緒標籤
-  static const List<String> _emotionLabels = [
-    '快樂', '憤怒', '悲傷', '恐懼', '驚訝', '厭惡',
-  ];
+  static const List<String> _emotionLabels = ['快樂','憤怒','悲傷','恐懼','驚訝','厭惡'];
 
-  // 各情緒對應的照片列表（File）
-  late final Map<String, List<File>> _emotionAlbums;
+  List<String> _allPhotos = [];
+  Map<String, List<String>> _remoteAlbums = { for (var e in _emotionLabels) e: <String>[] };
+  String? _selectedEmotion;
+  bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    _emotionAlbums = {for (var e in _emotionLabels) e: <File>[]};
+    _fetchRemotePhotos();
+  }
+
+  Future<void> _fetchRemotePhotos() async {
+    setState(() { _isLoading = true; });
+    try {
+      final list = await PhotoService.fetchPhotos();
+      debugPrint('🔍 fetchPhotos returned: ${list.length} items');
+      final tmp = { for (var e in _emotionLabels) e: <String>[] };
+      final all = <String>[];
+      for (var item in list) {
+        final urlRaw = item['image'];
+        final emoRaw = item['emotion'];
+        if (urlRaw == null) continue;
+        final url = urlRaw.toString();
+        all.add(url);
+        final emoStr = emoRaw?.toString().trim() ?? '';
+        debugPrint('📌 photo emotion: "$emoStr"');
+        if (tmp.containsKey(emoStr)) {
+          tmp[emoStr]!.add(url);
+        } else {
+          debugPrint('⚠️ unknown emotion: "$emoStr", skip');
+        }
+      }
+      setState(() {
+        _allPhotos = all;
+        _remoteAlbums = tmp;
+      });
+    } catch (e) {
+      debugPrint('🔴 fetchRemotePhotos error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('取得照片失敗：$e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() { _isLoading = false; });
+    }
   }
 
   Future<void> _addPhoto(String emotion) async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
-
-    final file = File(picked.path);
-    // 1) 先在本機 UI 中加入預覽
-    setState(() {
-      _emotionAlbums[emotion]!.add(file);
-    });
-
-    // 2) 再呼叫後端上傳
+    setState(() { _isLoading = true; });
     try {
-      await PhotoService.uploadPhoto(imageFile: file);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('📤 照片上傳成功'))
-      );
+      await PhotoService.uploadPhoto(imageFile: File(picked.path), emotion: emotion);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('📤 上傳成功')),
+        );
+        await _fetchRemotePhotos();
+      }
     } catch (e) {
-      // 上傳失敗時從畫面移除預覽，並提示錯誤
-      setState(() {
-        _emotionAlbums[emotion]!.remove(file);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('⚠️ 照片上傳失敗：$e'))
-      );
+      debugPrint('🔴 uploadPhoto error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('⚠️ 上傳失敗：$e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
-  Future<void> _renameEmotion(String oldName) async {
-    final controller = TextEditingController(text: oldName);
-    final newName = await showDialog<String>(
+  Future<String?> _chooseEmotion() {
+    return showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('重新命名情緒'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: '輸入新的情緒名稱'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-          ElevatedButton(
-            onPressed: () {
-              final v = controller.text.trim();
-              if (v.isNotEmpty && !_emotionAlbums.containsKey(v)) Navigator.pop(context, v);
-            },
-            child: const Text('確定'),
-          ),
-        ],
+      builder: (_) => SimpleDialog(
+        title: const Text('選擇情緒'),
+        children: _emotionLabels.map((e) => SimpleDialogOption(
+          onPressed: () => Navigator.pop(context, e),
+          child: Text(e),
+        )).toList(),
       ),
     );
-    if (newName != null && newName != oldName) {
-      setState(() {
-        final photos = _emotionAlbums.remove(oldName)!;
-        _emotionAlbums[newName] = photos;
-      });
-    }
-  }
-
-  Future<void> _addNewEmotion() async {
-    final controller = TextEditingController();
-    final newEmotion = await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('新增情緒分類'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: '輸入情緒名稱'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-          ElevatedButton(
-            onPressed: () {
-              final v = controller.text.trim();
-              if (v.isNotEmpty && !_emotionAlbums.containsKey(v)) Navigator.pop(context, v);
-            },
-            child: const Text('新增'),
-          ),
-        ],
-      ),
-    );
-    if (newEmotion != null) {
-      setState(() {
-        _emotionAlbums[newEmotion] = [];
-      });
-    }
-  }
-
-  void _removePhoto(String emotion, int idx) {
-    setState(() {
-      _emotionAlbums[emotion]!.removeAt(idx);
-    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final urls = _selectedEmotion == null
+      ? _allPhotos
+      : (_remoteAlbums[_selectedEmotion] ?? []);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('相簿'),
         backgroundColor: const Color(0xFF9CAF88),
         automaticallyImplyLeading: false,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            children: [
-              for (final emotion in _emotionAlbums.keys)
-                _buildEmotionSection(emotion),
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: _addNewEmotion,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF9CAF88),
-                    borderRadius: BorderRadius.circular(12),
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            child: Row(
+              children: [
+                ChoiceChip(
+                  label: const Text('全部'),
+                  selected: _selectedEmotion == null,
+                  onSelected: (_) => setState(() { _selectedEmotion = null; }),
+                ),
+                const SizedBox(width: 8),
+                for (var emo in _emotionLabels) ...[
+                  ChoiceChip(
+                    label: Text(emo),
+                    selected: _selectedEmotion == emo,
+                    onSelected: (_) => setState(() { _selectedEmotion = emo; }),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.add, size: 48, color: Colors.white),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 1,
+                    ),
+                    itemCount: urls.length,
+                    itemBuilder: (_, i) => ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        urls[i],
+                        fit: BoxFit.cover,
+                        loadingBuilder: (_, child, progress) =>
+                          progress == null
+                            ? child
+                            : const Center(child: CircularProgressIndicator()),
+                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-      // 修正：相簿索引應為 4
-      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
-    );
-  }
-
-  Widget _buildEmotionSection(String emotion) {
-    final photos = _emotionAlbums[emotion]!;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: () => _renameEmotion(emotion),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(emotion, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 100,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: photos.length + 1,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (c, i) {
-                if (i < photos.length) {
-                  return _buildPhotoTile(emotion, i);
-                } else {
-                  return GestureDetector(
-                    onTap: () => _addPhoto(emotion),
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(child: Icon(Icons.add, size: 32, color: Colors.black54)),
-                    ),
-                  );
-                }
-              },
-            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPhotoTile(String emotion, int idx) {
-    final file = _emotionAlbums[emotion]![idx];
-    return GestureDetector(
-      onLongPress: () {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('刪除照片'),
-            content: const Text('確定要刪除此照片？'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-              ElevatedButton(onPressed: () {
-                Navigator.pop(context);
-                _removePhoto(emotion, idx);
-              }, child: const Text('刪除')),
-            ],
-          ),
-        );
-      },
-      child: Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          image: DecorationImage(image: FileImage(file), fit: BoxFit.cover),
-        ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 5),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final emo = _selectedEmotion ?? await _chooseEmotion();
+          if (emo != null) await _addPhoto(emo);
+        },
+        child: const Icon(Icons.add_a_photo),
       ),
     );
   }

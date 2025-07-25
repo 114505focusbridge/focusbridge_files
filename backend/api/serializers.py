@@ -2,67 +2,81 @@
 
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import MoodLog, Diary, Photo
+from .models import MoodLog, Diary, Photo, Album
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """
-    用於註冊的序列化器：
-    - username: 必填
-    - email: 選填
-    - password: 必填
-    - password2: 必填，用來確認兩次密碼一致
+    註冊用序列化器：
+    - username, email, password, password2
     """
-    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    password2 = serializers.CharField(write_only=True, required=True, label="Confirm Password", style={'input_type': 'password'})
+    password = serializers.CharField(
+        write_only=True, required=True, style={'input_type': 'password'}
+    )
+    password2 = serializers.CharField(
+        write_only=True, required=True, label="Confirm Password",
+        style={'input_type': 'password'}
+    )
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'password2']
-        extra_kwargs = {
-            'email': {'required': False, 'allow_blank': True},
-        }
+        extra_kwargs = {'email': {'required': False, 'allow_blank': True}}
 
     def validate(self, attrs):
-        """
-        驗證 password 與 password2 是否一致。
-        """
-        pw = attrs.get('password')
-        pw2 = attrs.get('password2')
-        if pw != pw2:
-            raise serializers.ValidationError({"password": "密碼欄位不一致。"})
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "兩次密碼不一致。"})
         return attrs
 
     def create(self, validated_data):
-        """
-        移除 password2，使用 create_user 來建立使用者，
-        讓 Django 自動做 password hash。
-        """
         validated_data.pop('password2')
         password = validated_data.pop('password')
         user = User.objects.create_user(password=password, **validated_data)
         return user
 
+
 class MoodLogSerializer(serializers.ModelSerializer):
     """
-    用於對 MoodLog 模型做序列化：
-    - id: 自動產生
-    - user: 只讀，不讓客戶端指定
-    - date: 只讀（自動填入）
-    - score, note: 由客戶端輸入
+    對應 MoodLog 模型：
+    - id, user (只讀), date (只讀), Tot_Hours, Tot_Exp
     """
+    user = serializers.ReadOnlyField(source='user.username')
+
     class Meta:
         model = MoodLog
-        fields = ['id', 'user', 'date', 'score', 'note']
+        fields = ['id', 'user', 'date', 'Tot_Hours', 'Tot_Exp']
         read_only_fields = ['id', 'date', 'user']
 
+
 class DiarySerializer(serializers.ModelSerializer):
+    """
+    對應 Diary 模型：
+    - id, content, created_at (只讀)
+    """
     class Meta:
         model = Diary
         fields = ['id', 'content', 'created_at']
-        read_only_fields = ['created_at']
-        
+        read_only_fields = ['id', 'created_at']
+
+
 class PhotoSerializer(serializers.ModelSerializer):
+    """
+    照片序列化器：
+    - owner (只讀)、emotion、image、uploaded_at (只讀)、album
+    """
+    owner       = serializers.ReadOnlyField(source='owner.username')
+    emotion     = serializers.ChoiceField(choices=Photo.EMOTION_CHOICES)
+    image       = serializers.ImageField()
+    uploaded_at = serializers.DateTimeField(read_only=True)
+    album       = serializers.PrimaryKeyRelatedField(
+                      queryset=Album.objects.all(),
+                      allow_null=True,
+                      required=False
+                  )
+
     class Meta:
-        model = Photo
-        fields = ['id', 'image', 'uploaded_at', 'album']
-        read_only_fields = ['id', 'uploaded_at']
+        model  = Photo
+        fields = ['id', 'owner', 'emotion', 'image', 'uploaded_at', 'album']
+
+
+# 如果你還有別的 serializers，例如 UserLogin、Achievement 等，
+# 請依照上面的格式，確保每個 serializer 的 fields 都與 model 一致。

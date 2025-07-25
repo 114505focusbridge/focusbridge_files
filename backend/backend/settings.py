@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-^+l_kk9ni0h_dokk^4)ufnf_sw2ggkwz%d((xowt*y$mxxmezs
 DEBUG = True
 
 # 若你要在遠端伺服器測試，可暫時設為 ['*']；正式上線時請改為具體網域
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS =  ['*']
 
 # -------------------------------------------------------------------
 # 3. 應用程式定義 (Installed Apps)
@@ -52,6 +52,9 @@ INSTALLED_APPS = [
     # 自建 App
     'api',
 ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # -------------------------------------------------------------------
 # 4. 中介層設定 (Middleware)
@@ -150,11 +153,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # -------------------------------------------------------------------
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',   # ← 新增
-        # 'rest_framework.authentication.SessionAuthentication', # 可視需要留或拿掉
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',           # 只允許已認證的用戶
+        'rest_framework.permissions.IsAuthenticated',
     ],
 }
 

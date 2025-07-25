@@ -183,7 +183,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
+      bottomNavigationBar: AppBottomNav(currentIndex: 2),
     );
   }
 }

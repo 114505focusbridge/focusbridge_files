@@ -1,77 +1,57 @@
 // lib/widgets/app_bottom_nav.dart
 
 import 'package:flutter/material.dart';
+import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 
-/// 底部共用導覽列，6 個按鈕：首頁、成就、日記、個人、設定、相簿
+/// 使用 ConvexAppBar 打造動畫導航列（固定樣式）
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   const AppBottomNav({required this.currentIndex, super.key});
 
-  void _onTap(BuildContext context, int index) {
-    switch (index) {
+  /// 點擊事件：依 index 導航
+  void _onTap(BuildContext ctx, int i) {
+    switch (i) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(ctx, '/home');
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, '/achievements');
+        Navigator.pushReplacementNamed(ctx, '/achievements');
         break;
       case 2:
-        // 將「日記」按鈕導向月曆總覽頁面
-        Navigator.pushReplacementNamed(context, '/calendar');
+        Navigator.pushReplacementNamed(ctx, '/diary_entry');
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, '/profile');
+        Navigator.pushReplacementNamed(ctx, '/profile');
         break;
       case 4:
-        Navigator.pushReplacementNamed(context, '/settings');
+        Navigator.pushReplacementNamed(ctx, '/settings');
         break;
       case 5:
-        Navigator.pushReplacementNamed(context, '/album');
+        Navigator.pushReplacementNamed(ctx, '/album');
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      type: BottomNavigationBarType.fixed,
+    return ConvexAppBar(
+      style: TabStyle.reactCircle,               // 改為固定樣式，允許偶數項目
       backgroundColor: const Color(0xFF9CAF88),
-      selectedItemColor: Colors.white,
-      unselectedItemColor: Colors.grey.shade300,
-      onTap: (i) => _onTap(context, i),
+      activeColor: Colors.white,
+      color: Colors.grey.shade200,
+      elevation: 8,
+      curveSize: 75,                       // 中央波峰寬度（保留設定）
+      height: 60,
+      initialActiveIndex: currentIndex,
       items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: '首頁',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.emoji_events_outlined),
-          activeIcon: Icon(Icons.emoji_events),
-          label: '成就',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.book_outlined),
-          activeIcon: Icon(Icons.book),
-          label: '日記',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: '個人',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          activeIcon: Icon(Icons.settings),
-          label: '設定',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.mood_outlined),
-          activeIcon: Icon(Icons.mood),
-          label: '相簿',
-        ),
+        TabItem(icon: Icons.home, title: '首頁'),
+        TabItem(icon: Icons.emoji_events, title: '成就'),
+        TabItem(icon: Icons.book, title: '日記'),
+        TabItem(icon: Icons.person, title: '個人'),
+        TabItem(icon: Icons.settings, title: '設定'),
+        TabItem(icon: Icons.mood, title: '相簿'),
       ],
+      onTap: (i) => _onTap(context, i),
     );
   }
 }

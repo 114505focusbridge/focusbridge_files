@@ -202,7 +202,7 @@ class PostEntryScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 0), // ← 加入底部導航
+      bottomNavigationBar: AppBottomNav(currentIndex: 0), // ← 加入底部導航
     );
   }
 }
