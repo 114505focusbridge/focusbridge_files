@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class MoodLog(models.Model):
-    GENDER_CHOICES=[
+    GENDER_CHOICES = [
         ('male', '男'),
         ('female', '女'),
         ('none', '不願透露'),
@@ -12,7 +12,7 @@ class MoodLog(models.Model):
     gender = models.CharField(
         max_length=10,
         choices=GENDER_CHOICES,
-        default='calm',
+        default='none',  # ✅ 修正這裡，必須是合法選項
     )
     birth = models.DateTimeField()
 
@@ -28,7 +28,7 @@ class Achievement(models.Model):
 
     def __str__(self):
         return self.achTitle
-    
+
 class UserAchievementProgress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     achievement = models.ForeignKey(Achievement, on_delete=models.CASCADE)
@@ -54,7 +54,6 @@ class Album(models.Model):
         return self.album_name
 
 class Photo(models.Model):
-    # 定義情緒選項
     EMOTION_CHOICES = [
         ('快樂', '快樂'),
         ('憤怒', '憤怒'),
@@ -68,7 +67,7 @@ class Photo(models.Model):
     emotion = models.CharField(
         max_length=10,
         choices=EMOTION_CHOICES,
-        default='快樂',  # 預設值，避免遷移時需手動指定
+        default='快樂',
     )
     image = models.ImageField(upload_to='photos/%Y/%m/%d/')
     uploaded_at = models.DateTimeField(auto_now_add=True)

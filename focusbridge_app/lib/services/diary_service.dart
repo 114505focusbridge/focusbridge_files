@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DiaryService {
-  static const String baseUrl = 'http://10.0.2.2:8000'; // 根據你的 Django IP 調整
+  static const String baseUrl = 'https://focusbridge-backend1.onrender.com'; // 根據你的 Django IP 調整
 
   /// ✅ 修改：新增日記後回傳是否成功
   static Future<bool> createDiary({required String content, required String emotion,}) async {
