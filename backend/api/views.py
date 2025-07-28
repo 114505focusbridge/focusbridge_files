@@ -5,15 +5,17 @@ from rest_framework import generics, viewsets, permissions, status, parsers, aut
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
-from .models import MoodLog, Diary, Photo
+from rest_framework.authtoken.views import ObtainAuthToken, APIView
+from .models import MoodLog, Diary, Photo, UserAchievementProgress
 from .serializers import (
     UserRegisterSerializer,
     MoodLogSerializer,
     DiarySerializer,
-    PhotoSerializer
+    PhotoSerializer,
+    UserAchievementSerializer
 )
-
+from rest_framework.permissions import IsAuthenticated
+from .utils import update_achievement_progress
 
 class RegisterAPIView(generics.CreateAPIView):
     """
@@ -52,18 +54,9 @@ class LogoutView(generics.GenericAPIView):
 
 
 class MoodLogViewSet(viewsets.ModelViewSet):
+    queryset = MoodLog.objects.all()
     serializer_class = MoodLogSerializer
-
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
-
-    def get_queryset(self):
-        user = self.request.user
-        if not user or not user.is_authenticated:
-            return MoodLog.objects.none()
-        return MoodLog.objects.filter(user=user).order_by('-date')
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -77,8 +70,9 @@ class DiaryViewSet(viewsets.ModelViewSet):
         return Diary.objects.filter(user=self.request.user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
+            diary = serializer.save(user=self.request.user)
+            update_achievement_progress(self.request.user, 'first_diary', increment=1.0)
+            update_achievement_progress(self.request.user, 'third_diary', increment=1.0)
 
 class PhotoViewSet(viewsets.ModelViewSet):
     """
@@ -99,6 +93,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+        update_achievement_progress(self.request.user, '2', increment=1.0)
 
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def upload(self, request):
@@ -118,3 +113,13 @@ class CustomObtainAuthToken(ObtainAuthToken):
         token = Token.objects.get(key=response.data['token'])
         user = token.user
         return Response({'token': token.key, 'username': user.username})
+
+class AchievementListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        progress = UserAchievementProgress.objects.filter(user=user)
+        serializer = UserAchievementSerializer(progress, many=True)
+        return Response(serializer.data)
+    

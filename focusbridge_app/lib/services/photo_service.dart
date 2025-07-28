@@ -76,4 +76,22 @@ class PhotoService {
       throw Exception('取得相片失敗 (狀態碼 ${rsp.statusCode})：${rsp.body}');
     }
   }
+
+  /// 刪除指定 id 的照片，需先登入
+  static Future<void> deletePhoto(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) {
+      throw Exception('尚未登入，請先呼叫 PhotoService.login');
+    }
+
+    final uri = Uri.parse('$baseUrl/api/photos/$id/');
+    final rsp = await http.delete(
+      uri,
+      headers: {'Authorization': 'Token $token'},
+    );
+    if (rsp.statusCode != 204) {
+      throw Exception('刪除失敗 (狀態碼 ${rsp.statusCode})：${rsp.body}');
+    }
+  }
 }

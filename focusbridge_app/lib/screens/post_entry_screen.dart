@@ -1,11 +1,11 @@
-// lib/screens/post_entry_screen.dart
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:focusbridge_app/widgets/app_bottom_nav.dart'; // ← 新增
-import 'package:focusbridge_app/services/diary_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
+import 'package:focusbridge_app/services/auth_service.dart';
+import 'package:focusbridge_app/models/achievement.dart';
 
-
-class PostEntryScreen extends StatelessWidget {
+class PostEntryScreen extends StatefulWidget {
   final String emotionLabel;
   final Color emotionColor;
   final String entryContent;
@@ -16,6 +16,65 @@ class PostEntryScreen extends StatelessWidget {
     required this.emotionColor,
     required this.entryContent,
   });
+
+  @override
+  State<PostEntryScreen> createState() => _PostEntryScreenState();
+}
+
+class _PostEntryScreenState extends State<PostEntryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkJustUnlockedAchievement(); // 加入檢查成就的方法
+  }
+
+  Future<void> _checkJustUnlockedAchievement() async {
+    final token = await AuthService.getToken();
+    if (token == null) {
+      debugPrint("⚠️ 找不到 token");
+      return;
+    }
+
+    final url = Uri.parse('http://10.0.2.2:8000/api/achievements/');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Authorization': 'Token $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        for (var item in data) {
+          if (item['just_unlocked'] == true) {
+            final ach = Achievement.fromJson(item);
+            if (context.mounted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                showDialog(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text("🎉 成就解鎖！"),
+                    content: Text("你完成了「${ach.achTitle}」成就！"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("太棒了！"),
+                      ),
+                    ],
+                  ),
+                );
+              });
+            }
+            break; // 只顯示一個
+          }
+        }
+      } else {
+        debugPrint("❌ 成就 API 回傳錯誤：${response.body}");
+      }
+    } catch (e) {
+      debugPrint("❌ 取得成就失敗：$e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +106,7 @@ class PostEntryScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '今天是：「\$emotionLabel」',
+                        '今天是：「${widget.emotionLabel}」',
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
@@ -58,7 +117,7 @@ class PostEntryScreen extends StatelessWidget {
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: emotionColor,
+                          color: widget.emotionColor,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -67,9 +126,7 @@ class PostEntryScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -93,9 +150,9 @@ class PostEntryScreen extends StatelessWidget {
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Column(
+                        child: const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               '情緒摘要：',
                               style: TextStyle(
@@ -122,9 +179,9 @@ class PostEntryScreen extends StatelessWidget {
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Column(
+                        child: const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'AI 建議：',
                               style: TextStyle(
@@ -202,7 +259,7 @@ class PostEntryScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNav(currentIndex: 0), // ← 加入底部導航
+      bottomNavigationBar: AppBottomNav(currentIndex: 0),
     );
   }
 }

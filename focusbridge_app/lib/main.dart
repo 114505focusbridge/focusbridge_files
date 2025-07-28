@@ -24,7 +24,7 @@ import 'package:focusbridge_app/screens/meditation_screen.dart';
 import 'package:focusbridge_app/screens/breathing_screen.dart';
 import 'package:focusbridge_app/screens/forgot_password_screen.dart';
 import 'package:focusbridge_app/screens/reset_password_screen.dart';
-
+import 'package:focusbridge_app/screens/profile_settings_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -89,6 +89,7 @@ class MyApp extends StatelessWidget {
               '/meditation': (c) => const MeditationScreen(),
               '/breathing': (c) => const BreathingScreen(),
               '/forgot_password': (c) => const ForgotPasswordScreen(),
+              '/profile_settings': (c) => const ProfileSettingsScreen(),
             },
 
             onGenerateRoute: (settings) {

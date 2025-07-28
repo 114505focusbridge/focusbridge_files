@@ -1,63 +1,88 @@
-// lib/screens/achievements_screen.dart
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:focusbridge_app/models/achievement.dart';
 import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
+import 'package:focusbridge_app/services/auth_service.dart'; // 引入 AuthService
 
-
-class AchievementsScreen extends StatelessWidget {
+class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
 
-  // 假資料：每日任務
-  List<Achievement> get _dailyTasks => [
-        Achievement(
-          id: 'write_note',
-          title: '小記開張',
-          description: '今天的小記字數達到 50 字！',
-          progress: 0.9,
-          unlocked: false,
-        ),
-        Achievement(
-          id: 'photo_master',
-          title: '攝影大師',
-          description: '新增一張你拍的照片。',
-          progress: 1.0,
-          unlocked: true,
-        ),
-        Achievement(
-          id: 'revisit_memory',
-          title: '重溫回憶',
-          description: '回顧至少一次小記。',
-          progress: 0.6,
-          unlocked: false,
-        ),
-      ];
+  @override
+  State<AchievementsScreen> createState() => _AchievementsScreenState();
+}
 
-  // 假資料：已解鎖的成就
-  List<Achievement> get _unlockedAchievements => [
-        Achievement(
-          id: 'first_note',
-          title: '萬事起頭難',
-          description: '第一次記錄自己的心情。',
-          unlocked: true,
-        ),
-        Achievement(
-          id: 'happy_collector',
-          title: '快樂收藏家',
-          description: '記錄過 10 次「快樂」情緒。',
-          unlocked: true,
-        ),
-        Achievement(
-          id: 'consistent_keep',
-          title: '堅持不懈者',
-          description: '連續記錄 7 天以上。',
-          unlocked: true,
-        ),
-        // …更多
-      ];
+class _AchievementsScreenState extends State<AchievementsScreen> {
+  List<Achievement> _dailyTasks = [];
+  List<Achievement> _unlockedAchievements = [];
+  List<Achievement> _lockedAchievements = [];
+  Achievement? _justUnlocked;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAchievements();
+  }
+
+  Future<void> _loadAchievements() async {
+    final token = await AuthService.getToken(); // ✅ 從 SharedPreferences 取得 token
+    if (token == null) {
+      debugPrint('⚠️ 尚未登入，無法取得 token');
+      return;
+    }
+
+    final url = Uri.parse('http://10.0.2.2:8000/api/achievements/'); // ✅ 改正網址
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Authorization': 'Token $token'}, // ✅ 注意：Token 而不是 Bearer
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+
+        final daily = <Achievement>[];
+        final unlocked = <Achievement>[];
+        final locked = <Achievement>[];
+        Achievement? justUnlocked;
+
+        for (var item in data) {
+          final ach = Achievement.fromJson(item);
+          if (ach.isDaily) {
+            daily.add(ach);
+          } else if (ach.unlocked) {
+            unlocked.add(ach);
+            if (item['just_unlocked'] == true) {
+              justUnlocked = ach;
+            }
+          } else {
+            locked.add(ach);
+          }
+        }
+
+        setState(() {
+          _dailyTasks = daily;
+          _unlockedAchievements = unlocked;
+          _lockedAchievements = locked;
+          _justUnlocked = justUnlocked;
+        });
+
+        if (justUnlocked != null && context.mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+          });
+        }
+      } else {
+        debugPrint('❌ 取得成就失敗：${response.body}');
+      }
+    } catch (e) {
+      debugPrint('❌ 發生錯誤：$e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final _ = _justUnlocked;
     return Scaffold(
       appBar: AppBar(
         title: const Text('成就'),
@@ -68,22 +93,15 @@ class AchievementsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           children: [
-            // 每日任務
-            const Text(
-              '每日任務',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            for (var task in _dailyTasks)
-              _buildTaskCard(task),
+            _buildOverviewCard(),
             const SizedBox(height: 24),
-
-            // 已達成的成就
-            const Text(
-              '已達成的成就',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
+            _buildSectionTitle('每日任務'),
+            for (var task in _dailyTasks) _buildTaskCard(task),
+            const SizedBox(height: 24),
+            _buildSectionTitle('未解鎖的成就'),
+            for (var ach in _lockedAchievements) _buildTaskCard(ach),
+            const SizedBox(height: 24),
+            _buildSectionTitle('已達成的成就'),
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -95,11 +113,58 @@ class AchievementsScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNav(currentIndex: 1), // achievements 索引
+      bottomNavigationBar: AppBottomNav(currentIndex: 1),
     );
   }
 
-  // 任務區塊：卡片 + 進度條
+  Widget _buildSectionTitle(String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildOverviewCard() {
+    final hasCompletedDaily =
+        _dailyTasks.any((task) => task.unlocked == true);
+    final emoji = hasCompletedDaily ? '🎉' : '📌';
+    final title =
+        hasCompletedDaily ? '今日任務完成！' : '還沒完成今日任務～';
+    final subtitle = hasCompletedDaily
+        ? '太棒了！繼續保持記錄好習慣～'
+        : '記得去完成你的每日任務唷，加油！';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8E9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 32)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(subtitle, style: const TextStyle(fontSize: 14)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTaskCard(Achievement task) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -108,26 +173,22 @@ class AchievementsScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         child: Row(
           children: [
-            Icon(
-              Icons.emoji_events,
-              size: 32,
-              color: task.unlocked ? Colors.orange : Colors.grey,
-            ),
+            Icon(Icons.emoji_events,
+                size: 32, color: task.unlocked ? Colors.orange : Colors.grey),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    task.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight:
-                          task.unlocked ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
+                  Text(task.achTitle,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight:
+                            task.unlocked ? FontWeight.bold : FontWeight.normal,
+                      )),
                   const SizedBox(height: 4),
-                  Text(task.description, style: const TextStyle(fontSize: 14)),
+                  Text(task.achContent,
+                      style: const TextStyle(fontSize: 14)),
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
                     value: task.progress,
@@ -138,17 +199,14 @@ class AchievementsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              '${(task.progress * 100).round()}%',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('${(task.progress * 100).round()}%',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),
     );
   }
 
-  // 成就徽章：小卡片
   Widget _buildAchievementBadge(Achievement ach) {
     return Container(
       width: 140,
@@ -160,14 +218,13 @@ class AchievementsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.emoji_events, color: Colors.green, size: 28),
+          const Icon(Icons.emoji_events, color: Colors.green, size: 28),
           const SizedBox(height: 8),
-          Text(
-            ach.title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
+          Text(ach.achTitle,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(ach.description, style: const TextStyle(fontSize: 12)),
+          Text(ach.achContent, style: const TextStyle(fontSize: 12)),
         ],
       ),
     );
