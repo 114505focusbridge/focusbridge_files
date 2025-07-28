@@ -18,35 +18,39 @@ class HomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             const Text(
               '今天情緒如何呢...？',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.count(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1,
-                  children: [
-                    // 文字情緒按鈕
-                    for (var label in _emotionLabels)
-                      _TextEmotionCircle(label),
-                    // 圖示情緒按鈕
-                    for (var i = 0; i < _emotionIcons.length; i++)
-                      _IconEmotionCircle(
-                        _emotionIcons[i],
-                        _emotionLabels[i],
-                      ),
-                  ],
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 20,
+                    childAspectRatio: 0.5,
+                  ),
+                  itemCount: _emotionLabels.length,
+                  itemBuilder: (context, index) {
+                    final label = _emotionLabels[index];
+                    final iconPath = _emotionIcons[index];
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _TextEmotionCircle(label),
+                        const SizedBox(height: 16),
+                        _IconEmotionCircle(iconPath, label),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -65,7 +69,7 @@ const List<String> _emotionLabels = [
   '恐懼', '驚訝', '厭惡',
 ];
 
-// 圖示資源
+// 圖示資源 (對應上方文字標籤順序)
 const List<String> _emotionIcons = [
   'assets/images/emotion_sun.png',
   'assets/images/emotion_tornado.png',
@@ -87,6 +91,8 @@ class _TextEmotionCircle extends StatelessWidget {
         Navigator.pushNamed(context, '/color_picker', arguments: label);
       },
       child: Container(
+        width: 100,
+        height: 100,
         decoration: const BoxDecoration(
           color: Color(0xFF9CAF88),
           shape: BoxShape.circle,
@@ -94,7 +100,11 @@ class _TextEmotionCircle extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
           textAlign: TextAlign.center,
         ),
       ),
@@ -115,11 +125,13 @@ class _IconEmotionCircle extends StatelessWidget {
         Navigator.pushNamed(context, '/color_picker', arguments: label);
       },
       child: Container(
+        width: 100,
+        height: 100,
         decoration: BoxDecoration(
           color: Colors.grey.shade200,
           shape: BoxShape.circle,
         ),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(20),
         child: Image.asset(assetPath, fit: BoxFit.contain),
       ),
     );

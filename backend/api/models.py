@@ -2,25 +2,41 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class MoodLog(models.Model):
+    GENDER_CHOICES=[
+        ('male', '男'),
+        ('female', '女'),
+        ('none', '不願透露'),
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mood_logs')
-    password = models.CharField(max_length=100)
-    date = models.DateField(auto_now_add=True)
-    Tot_Hours = models.IntegerField(default=0)
-    Tot_Exp = models.IntegerField(default=0)
-
-    class Meta:
-        ordering = ['-date']  # 預設依日期倒序排列
+    name = models.CharField(max_length=20)
+    gender = models.CharField(
+        max_length=10,
+        choices=GENDER_CHOICES,
+        default='calm',
+    )
+    birth = models.DateTimeField()
 
     def __str__(self):
-        return f"{self.user.username} - {self.date} - Exp:{self.Tot_Exp} Hours:{self.Tot_Hours}"
+        return f"{self.user.username} 的個人資料"
 
 class Achievement(models.Model):
-    ach_title = models.CharField(max_length=100)
-    ach_content = models.TextField()
+    id = models.CharField(primary_key=True, max_length=50)
+    achTitle = models.CharField(max_length=100)
+    achContent = models.TextField()
     exp = models.IntegerField()
+    is_daily = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.ach_title
+        return self.achTitle
+    
+class UserAchievementProgress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    achievement = models.ForeignKey(Achievement, on_delete=models.CASCADE)
+    progress = models.FloatField(default=0.0)
+    unlocked = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('user', 'achievement')
 
 class Goal(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -137,6 +153,7 @@ class DiaryTitle(models.Model):
 class Diary(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    emotion = models.CharField(max_length=20)
     content = models.TextField()
 
     def __str__(self):

@@ -2,7 +2,7 @@
 
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import MoodLog, Diary, Photo, Album
+from .models import MoodLog, Diary, Photo, Album, Achievement
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """
@@ -35,16 +35,10 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 
 class MoodLogSerializer(serializers.ModelSerializer):
-    """
-    對應 MoodLog 模型：
-    - id, user (只讀), date (只讀), Tot_Hours, Tot_Exp
-    """
-    user = serializers.ReadOnlyField(source='user.username')
-
     class Meta:
         model = MoodLog
-        fields = ['id', 'user', 'date', 'Tot_Hours', 'Tot_Exp']
-        read_only_fields = ['id', 'date', 'user']
+        fields = ['id', 'user', 'name', 'gender', 'birth']
+        read_only_fields = ['user']
 
 
 class DiarySerializer(serializers.ModelSerializer):
@@ -54,8 +48,8 @@ class DiarySerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Diary
-        fields = ['id', 'content', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'user', 'created_at', 'emotion', 'content']
+        read_only_fields = ['id', 'user', 'created_at']
 
 
 class PhotoSerializer(serializers.ModelSerializer):
@@ -80,3 +74,10 @@ class PhotoSerializer(serializers.ModelSerializer):
 
 # 如果你還有別的 serializers，例如 UserLogin、Achievement 等，
 # 請依照上面的格式，確保每個 serializer 的 fields 都與 model 一致。
+
+class UserAchievementSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Achievement
+        fields = ['id', 'achTitle', 'achContent','exp','is_daily']
+        read_only_fields = ['id', 'achTitle','achContent']

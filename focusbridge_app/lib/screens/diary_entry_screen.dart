@@ -1,5 +1,3 @@
-// lib/screens/diary_entry_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:focusbridge_app/screens/post_entry_screen.dart';
@@ -18,7 +16,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
   late Color _selectedColor;
   late TextEditingController _controller;
   late String _formattedDate;
-  bool _isLoading = false; // 用來控制按鈕 loading 與禁用
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -68,9 +66,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
 
   String _formatChineseDate(DateTime dt) {
     final ymd = DateFormat('yyyy年MM月dd日').format(dt);
-    const weekdays = [
-      '星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'
-    ];
+    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
     final weekday = weekdays[dt.weekday % 7];
     return '$ymd $weekday';
   }
@@ -87,22 +83,34 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 呼叫後端 API 儲存日記
-      await DiaryService.createDiary(content: content);
+      final success = await DiaryService.createDiary(
+        content: content,
+        emotion: _emotionLabel,
+        );
 
-      // 成功後再導頁
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PostEntryScreen(
-            emotionLabel: _emotionLabel,
-            emotionColor: _selectedColor,
-            entryContent: content,
+      if (success) {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PostEntryScreen(
+              emotionLabel: _emotionLabel,
+              emotionColor: _selectedColor,
+              entryContent: content,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('儲存失敗，請稍後再試')),
+        );
+      }
     } catch (e) {
-      //處理錯誤
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('錯誤：${e.toString()}')),
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -129,8 +137,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -162,7 +169,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
                 height: 48,
                 child: ElevatedButton(
                   onPressed:
-                      _isLoading ? null : _saveEntryAndNavigate, // 防重複點擊
+                      _isLoading ? null : _saveEntryAndNavigate,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF9CAF88),
                     shape: RoundedRectangleBorder(

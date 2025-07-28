@@ -14,11 +14,16 @@ class AlbumScreen extends StatefulWidget {
 }
 
 class _AlbumScreenState extends State<AlbumScreen> {
-  static const List<String> _emotionLabels = ['快樂','憤怒','悲傷','恐懼','驚訝','厭惡'];
+  static const List<String> _emotionLabels = [
+    '快樂', '憤怒', '悲傷', '恐懼', '驚訝', '厭惡',
+  ];
 
-  List<String> _allPhotos = [];
-  Map<String, List<String>> _remoteAlbums = { for (var e in _emotionLabels) e: <String>[] };
+  /// 從後端獲得的照片列表，包含 id, url, emotion
+  List<Map<String, dynamic>> _items = [];
+
+  /// 目前選中的情緒分類。null = 全部
   String? _selectedEmotion;
+
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
 
@@ -32,34 +37,19 @@ class _AlbumScreenState extends State<AlbumScreen> {
     setState(() { _isLoading = true; });
     try {
       final list = await PhotoService.fetchPhotos();
-      debugPrint('🔍 fetchPhotos returned: ${list.length} items');
-      final tmp = { for (var e in _emotionLabels) e: <String>[] };
-      final all = <String>[];
-      for (var item in list) {
-        final urlRaw = item['image'];
-        final emoRaw = item['emotion'];
-        if (urlRaw == null) continue;
-        final url = urlRaw.toString();
-        all.add(url);
-        final emoStr = emoRaw?.toString().trim() ?? '';
-        debugPrint('📌 photo emotion: "$emoStr"');
-        if (tmp.containsKey(emoStr)) {
-          tmp[emoStr]!.add(url);
-        } else {
-          debugPrint('⚠️ unknown emotion: "$emoStr", skip');
-        }
-      }
-      setState(() {
-        _allPhotos = all;
-        _remoteAlbums = tmp;
-      });
+      // list: List<Map> 包含 {'id': int, 'image': String, 'emotion': String}
+      final data = list.map((m) {
+        return {
+          'id': m['id'] as int,
+          'url': m['image'] as String,
+          'emotion': (m['emotion'] as String).trim(),
+        };
+      }).toList();
+      setState(() { _items = data; });
     } catch (e) {
-      debugPrint('🔴 fetchRemotePhotos error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('取得照片失敗：$e')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('取得照片失敗：$e'))
+      );
     } finally {
       if (mounted) setState(() { _isLoading = false; });
     }
@@ -70,20 +60,20 @@ class _AlbumScreenState extends State<AlbumScreen> {
     if (picked == null) return;
     setState(() { _isLoading = true; });
     try {
-      await PhotoService.uploadPhoto(imageFile: File(picked.path), emotion: emotion);
+      await PhotoService.uploadPhoto(
+        imageFile: File(picked.path),
+        emotion: emotion,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('📤 上傳成功')),
+          const SnackBar(content: Text('📤 上傳成功'))
         );
         await _fetchRemotePhotos();
       }
     } catch (e) {
-      debugPrint('🔴 uploadPhoto error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('⚠️ 上傳失敗：$e')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('⚠️ 上傳失敗：$e'))
+      );
     } finally {
       if (mounted) setState(() { _isLoading = false; });
     }
@@ -102,11 +92,39 @@ class _AlbumScreenState extends State<AlbumScreen> {
     );
   }
 
+  /// 長按刪除
+  Future<void> _confirmDelete(int id) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('刪除照片？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('刪除')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      setState(() { _isLoading = true; });
+      try {
+        await PhotoService.deletePhoto(id);
+        await _fetchRemotePhotos();
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('刪除失敗：$e'))
+        );
+      } finally {
+        if (mounted) setState(() { _isLoading = false; });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final urls = _selectedEmotion == null
-      ? _allPhotos
-      : (_remoteAlbums[_selectedEmotion] ?? []);
+    // 根據分類篩選顯示資料
+    final displayList = _selectedEmotion == null
+      ? _items
+      : _items.where((it) => it['emotion'] == _selectedEmotion).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -150,19 +168,25 @@ class _AlbumScreenState extends State<AlbumScreen> {
                       mainAxisSpacing: 8,
                       childAspectRatio: 1,
                     ),
-                    itemCount: urls.length,
-                    itemBuilder: (_, i) => ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        urls[i],
-                        fit: BoxFit.cover,
-                        loadingBuilder: (_, child, progress) =>
-                          progress == null
-                            ? child
-                            : const Center(child: CircularProgressIndicator()),
-                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
-                      ),
-                    ),
+                    itemCount: displayList.length,
+                    itemBuilder: (_, i) {
+                      final item = displayList[i];
+                      return GestureDetector(
+                        onLongPress: () => _confirmDelete(item['id'] as int),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            item['url'] as String,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (_, child, progress) =>
+                              progress == null
+                                ? child
+                                : const Center(child: CircularProgressIndicator()),
+                            errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
           ),

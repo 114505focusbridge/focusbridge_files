@@ -68,7 +68,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildButton('偏好設置', () {
                 Navigator.pushNamed(context, '/preferences');
               }),
-              _buildButton('個人資料', _showComingSoon),
+              _buildButton('個人資料', () {
+               Navigator.pushNamed(context, '/profile_settings');
+             }),
               _buildButton('通知', _showComingSoon),
               _buildButton('音效', _showComingSoon),
               _buildButton('其他設置', _showComingSoon),
