@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: focusbridge-backend
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn focusbridge.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: focusbridge.settings
+      - key: SECRET_KEY
+        value: your-secret-key-here
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: DEBUG
+        value: "False"

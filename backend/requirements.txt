@@ -1,8 +1,17 @@
-Django>=4.2
-djangorestframework>=3.14
-django-cors-headers>=3.14
-djangorestframework-simplejwt>=5.2
-# 以上只要 basic Token 認證不需要 simplejwt，可省略 simplejwt
-mysqlclient>=2.1       # 如果你要連 MySQL 時需要這個
-PyMySQL>=1.0           # 如果你用 PyMySQL 取代 mysqlclient，可選擇安裝
-python-dotenv>=1.0.0   # 如果你要用 .env 管理設定，否則可省略
+asgiref==3.8.1
+Django==5.2.1
+django-cors-headers==4.7.0
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
+gunicorn==23.0.0
+jieba==0.42.1
+mysql==0.0.3
+mysqlclient==2.2.7
+packaging==25.0
+pillow==11.2.1
+PyJWT==2.9.0
+PyMySQL==1.1.1
+python-dotenv==1.1.0
+sqlparse==0.5.3
+tzdata==2025.2
+whitenoise==6.9.0
