@@ -138,7 +138,7 @@ USE_TZ = True
 # 9. 靜態檔案 (Static files) 及媒體檔案 (Media files)
 # -------------------------------------------------------------------
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'         # collectstatic 之後會放到這裡
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')         # collectstatic 之後會放到這裡
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'                 # 上傳的圖片、檔案會儲存在此
