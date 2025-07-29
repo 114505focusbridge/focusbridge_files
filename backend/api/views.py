@@ -17,7 +17,10 @@ from .serializers import (
     UserAchievementSerializer
 )
 from rest_framework.permissions import IsAuthenticated
-from .utils import update_achievement_progress
+from .utils.achievement import update_achievement_progress  # ✅ 正確指定模組
+from .utils.emotion_models import analyze_sentiment
+
+
 
 # ✅ 使用者註冊
 class RegisterAPIView(generics.CreateAPIView):

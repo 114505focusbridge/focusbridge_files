@@ -9,12 +9,16 @@ class PostEntryScreen extends StatefulWidget {
   final String emotionLabel;
   final Color emotionColor;
   final String entryContent;
+  final String aiLabel;
+  final String aiMessage;
 
   const PostEntryScreen({
     super.key,
     required this.emotionLabel,
     required this.emotionColor,
     required this.entryContent,
+    required this.aiLabel,
+    required this.aiMessage,
   });
 
   @override
@@ -25,7 +29,7 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
   @override
   void initState() {
     super.initState();
-    _checkJustUnlockedAchievement(); // 加入檢查成就的方法
+    _checkJustUnlockedAchievement();
   }
 
   Future<void> _checkJustUnlockedAchievement() async {
@@ -65,7 +69,7 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                 );
               });
             }
-            break; // 只顯示一個
+            break;
           }
         }
       } else {
@@ -150,20 +154,22 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Column(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               '情緒摘要：',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              '系統正在分析你的心情，稍後將顯示一段溫暖且貼近你心情的小短文……',
-                              style: TextStyle(
+                              widget.aiLabel.isNotEmpty
+                                  ? widget.aiLabel
+                                  : '（未偵測到情緒）',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.black87,
                               ),
@@ -179,20 +185,22 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Column(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'AI 建議：',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              '保持這樣的記錄習慣，有助於你更了解自己的情緒變化喔！若感到壓力過大，建議做些深呼吸練習或聆聽輕音樂。',
-                              style: TextStyle(
+                              widget.aiMessage.isNotEmpty
+                                  ? widget.aiMessage
+                                  : '（尚未收到 AI 建議）',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.black87,
                               ),

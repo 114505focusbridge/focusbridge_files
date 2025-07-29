@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   // ✅ 注意：這裡 baseUrl 不要加 /api，路徑由下面補上
-  static const String baseUrl = 'https://focusbridge-backend1.onrender.com';
+  static const String baseUrl = 'http://10.0.2.2:8000';
 
   /// ✅ 註冊：POST /api/auth/register/
   /// 成功回傳 Map：包含 username、email、token

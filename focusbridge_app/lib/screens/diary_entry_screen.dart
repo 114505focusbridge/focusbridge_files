@@ -83,13 +83,14 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final success = await DiaryService.createDiary(
+      final result = await DiaryService.createDiary(
         content: content,
         emotion: _emotionLabel,
-        );
+      );
 
-      if (success) {
-        if (!mounted) return;
+      if (!mounted) return;
+
+      if (result['success'] == true) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -97,13 +98,15 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
               emotionLabel: _emotionLabel,
               emotionColor: _selectedColor,
               entryContent: content,
+              aiLabel: result['label'] ?? '',
+              aiMessage: result['ai_message'] ?? '',
             ),
           ),
         );
       } else {
-        if (!mounted) return;
+        final errorMsg = result['error'] ?? '儲存失敗，請稍後再試';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('儲存失敗，請稍後再試')),
+          SnackBar(content: Text(errorMsg)),
         );
       }
     } catch (e) {
@@ -168,8 +171,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
               SizedBox(
                 height: 48,
                 child: ElevatedButton(
-                  onPressed:
-                      _isLoading ? null : _saveEntryAndNavigate,
+                  onPressed: _isLoading ? null : _saveEntryAndNavigate,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF9CAF88),
                     shape: RoundedRectangleBorder(
@@ -177,9 +179,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
                     ),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(
-                          color: Colors.white,
-                        )
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                           '存入心情存摺',
                           style: TextStyle(fontSize: 18),
