@@ -25,6 +25,7 @@ import 'package:focusbridge_app/screens/breathing_screen.dart';
 import 'package:focusbridge_app/screens/forgot_password_screen.dart';
 import 'package:focusbridge_app/screens/reset_password_screen.dart';
 import 'package:focusbridge_app/screens/profile_settings_screen.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -45,7 +46,6 @@ class MyApp extends StatelessWidget {
             title: 'All Day Health Diary',
             debugShowCheckedModeBanner: false,
 
-            // 全局文字縮放
             builder: (context, child) {
               return MediaQuery.withClampedTextScaling(
                 minScaleFactor: pref.fontScale,
@@ -54,7 +54,6 @@ class MyApp extends StatelessWidget {
               );
             },
 
-            // 使用單一淺色主題
             theme: ThemeData(
               primarySwatch: Colors.green,
               scaffoldBackgroundColor: const Color(0xFFFFFADD),
@@ -77,11 +76,6 @@ class MyApp extends StatelessWidget {
               '/achievements': (c) => const AchievementsScreen(),
               '/calendar': (c) => const CalendarScreen(),
               '/diary_entry': (c) => const DiaryEntryScreen(),
-              '/post_entry': (c) => const PostEntryScreen(
-                    emotionLabel: '',
-                    emotionColor: Colors.transparent,
-                    entryContent: '',
-                  ),
               '/album': (c) => const AlbumScreen(),
               '/profile': (c) => const ProfileScreen(),
               '/color_picker': (c) => const ColorPickerScreen(),
@@ -92,7 +86,21 @@ class MyApp extends StatelessWidget {
               '/profile_settings': (c) => const ProfileSettingsScreen(),
             },
 
+            /// 🧠 動態處理 /post_entry 和 /reset_password/:uid/:token
             onGenerateRoute: (settings) {
+              if (settings.name == '/post_entry') {
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (_) => PostEntryScreen(
+                    emotionLabel: args['emotionLabel'],
+                    emotionColor: args['emotionColor'],
+                    entryContent: args['entryContent'],
+                    aiLabel: args['aiLabel'],
+                    aiMessage: args['aiMessage'],
+                  ),
+                );
+              }
+
               if (settings.name?.startsWith('/reset_password/') == true) {
                 final uri = Uri.parse(settings.name!);
                 final segments = uri.pathSegments;
@@ -104,6 +112,7 @@ class MyApp extends StatelessWidget {
                   );
                 }
               }
+
               return null;
             },
           );
