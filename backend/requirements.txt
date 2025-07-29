@@ -15,4 +15,5 @@ python-dotenv==1.1.0
 sqlparse==0.5.3
 tzdata==2025.2
 whitenoise==6.9.0
-transformers==4.41.1
+transformers==4.36.2
+requests==2.32.4
