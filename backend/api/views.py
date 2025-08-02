@@ -17,17 +17,12 @@ from .serializers import (
     UserAchievementSerializer
 )
 from rest_framework.permissions import IsAuthenticated
-from .utils.achievement import update_achievement_progress  # ✅ 正確指定模組
+from .utils.achievement import update_achievement_progress
 from .utils.emotion_models import analyze_sentiment
-
 
 
 # ✅ 使用者註冊
 class RegisterAPIView(generics.CreateAPIView):
-    """
-    使用者註冊 API：
-    - POST /api/auth/register/
-    """
     serializer_class = UserRegisterSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -46,18 +41,16 @@ class RegisterAPIView(generics.CreateAPIView):
         except IntegrityError:
             raise ValidationError({"error": "帳號或 Email 已存在，請更換後再試。"})
 
+
 # ✅ 登出
 class LogoutView(generics.GenericAPIView):
-    """
-    使用者登出 API：
-    - POST /api/auth/logout/
-    """
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         Token.objects.filter(user=request.user).delete()
         return Response({'detail': '已成功登出。'}, status=status.HTTP_200_OK)
+
 
 # ✅ 心情紀錄
 class MoodLogViewSet(viewsets.ModelViewSet):
@@ -68,7 +61,8 @@ class MoodLogViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-# ✅ 小記日記
+
+# ✅ 小記日記（含 AI 分析回傳）
 class DiaryViewSet(viewsets.ModelViewSet):
     serializer_class = DiarySerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -76,16 +70,37 @@ class DiaryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Diary.objects.filter(user=self.request.user).order_by('-created_at')
 
-    def perform_create(self, serializer):
-        diary = serializer.save(user=self.request.user)
-        update_achievement_progress(self.request.user, 'first_diary', increment=1.0)
-        update_achievement_progress(self.request.user, 'third_diary', increment=1.0)
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        content = request.data.get("content", "")
+        emotion = request.data.get("emotion", "")
 
-# ✅ 照片
+        if not content:
+            return Response({"error": "日記內容不得為空"}, status=status.HTTP_400_BAD_REQUEST)
+
+        label, ai_message, keywords, topics = analyze_sentiment(content)
+
+        diary = Diary.objects.create(
+            user=user,
+            content=content,
+            emotion=emotion,
+            label=label,
+            ai_message=ai_message
+        )
+
+        # 更新成就進度
+        update_achievement_progress(user, 'first_diary', increment=1.0)
+        update_achievement_progress(user, 'third_diary', increment=1.0)
+
+        return Response({
+            "id": diary.id,
+            "label": label,
+            "ai_message": ai_message
+        }, status=status.HTTP_201_CREATED)
+
+
+# ✅ 照片 CRUD + 上傳
 class PhotoViewSet(viewsets.ModelViewSet):
-    """
-    照片 CRUD + 上傳
-    """
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = PhotoSerializer
@@ -105,13 +120,15 @@ class PhotoViewSet(viewsets.ModelViewSet):
         serializer.save(owner=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-# ✅ 登入 token 擴充版本
+
+# ✅ 登入擴充
 class CustomObtainAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         token = Token.objects.get(key=response.data['token'])
         user = token.user
         return Response({'token': token.key, 'username': user.username})
+
 
 # ✅ 查詢使用者成就進度
 class AchievementListView(APIView):
