@@ -34,19 +34,14 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
 
   Future<void> _checkJustUnlockedAchievement() async {
     final token = await AuthService.getToken();
-    if (token == null) {
-      debugPrint("⚠️ 找不到 token");
-      return;
-    }
+    if (token == null) return;
 
     final url = Uri.parse('http://10.0.2.2:8000/api/achievements/');
-
     try {
       final response = await http.get(
         url,
         headers: {'Authorization': 'Token $token'},
       );
-
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         for (var item in data) {
@@ -80,8 +75,26 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
     }
   }
 
+  String _translateLabel(String label) {
+    switch (label.toLowerCase()) {
+      case 'positive':
+        return '😀 正向';
+      case 'neutral':
+        return '😐 中立';
+      case 'negative':
+        return '😞 負向';
+      default:
+        return '（無效的分析結果）';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final translatedLabel = _translateLabel(widget.aiLabel);
+    final aiMessageText = widget.aiMessage.trim().isNotEmpty
+        ? widget.aiMessage
+        : '（AI 尚未回應建議）';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('存入成功！'),
@@ -98,7 +111,7 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
               child: Column(
                 children: [
                   const Text(
-                    '存入成功！',
+                    '日記已成功送出！',
                     style: TextStyle(
                       fontSize: 24,
                       color: Colors.white,
@@ -110,7 +123,7 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '今天是：「${widget.emotionLabel}」',
+                        '你標記的情緒：「${widget.emotionLabel}」',
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
@@ -147,80 +160,29 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '情緒摘要：',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              widget.aiLabel.isNotEmpty
-                                  ? widget.aiLabel
-                                  : '（未偵測到情緒）',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
+                      _buildInfoCard(
+                        icon: Icons.insights,
+                        title: '情緒評估',
+                        content: translatedLabel,
+                        iconColor: Colors.blue,
                       ),
-                      const SizedBox(height: 24),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'AI 建議：',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              widget.aiMessage.isNotEmpty
-                                  ? widget.aiMessage
-                                  : '（尚未收到 AI 建議）',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 16),
+                      _buildInfoCard(
+                        icon: Icons.favorite,
+                        title: 'AI 心理師建議',
+                        content: aiMessageText,
+                        iconColor: Colors.pink,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           OutlinedButton(
-                            onPressed: () {
-                              Navigator.popUntil(
-                                context,
-                                ModalRoute.withName('/home'),
-                              );
-                            },
+                            onPressed: () => Navigator.popUntil(
+                              context,
+                              ModalRoute.withName('/home'),
+                            ),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.grey.shade400),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(24),
                               ),
@@ -228,15 +190,12 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                             child: const Padding(
                               padding: EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 12),
-                              child: Text(
-                                '返回主頁',
-                                style: TextStyle(fontSize: 16),
-                              ),
+                              child: Text('返回主頁'),
                             ),
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              Navigator.pushReplacementNamed(context, '/home');
+                              Navigator.pushNamed(context, '/diary');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF9CAF88),
@@ -247,13 +206,7 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                             child: const Padding(
                               padding: EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 12),
-                              child: Text(
-                                '再次記錄',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              child: Text('再次紀錄'),
                             ),
                           ),
                         ],
@@ -267,7 +220,42 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNav(currentIndex: 0),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
+    );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required String content,
+    required Color iconColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Text(content, style: const TextStyle(fontSize: 15)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
