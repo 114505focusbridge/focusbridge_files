@@ -62,7 +62,7 @@ class MoodLogViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-# ✅ 小記日記（含 AI 分析回傳）
+# ✅ 小記日記（含 AI 分析功能）
 class DiaryViewSet(viewsets.ModelViewSet):
     serializer_class = DiarySerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -78,24 +78,31 @@ class DiaryViewSet(viewsets.ModelViewSet):
         if not content:
             return Response({"error": "日記內容不得為空"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 🧠 使用模型分析情緒
         label, ai_message, keywords, topics = analyze_sentiment(content)
 
+        # ✅ 建立日記，儲存分析結果
         diary = Diary.objects.create(
             user=user,
             content=content,
             emotion=emotion,
-            label=label,
-            ai_message=ai_message
+            sentiment=label,
+            ai_message=ai_message,
+            keywords=", ".join(keywords),
+            topics=", ".join(topics)
         )
 
-        # 更新成就進度
+        # 🎯 更新成就進度
         update_achievement_progress(user, 'first_diary', increment=1.0)
         update_achievement_progress(user, 'third_diary', increment=1.0)
 
         return Response({
+            "success": True,
             "id": diary.id,
             "label": label,
-            "ai_message": ai_message
+            "ai_message": ai_message,
+            "keywords": keywords,
+            "topics": topics
         }, status=status.HTTP_201_CREATED)
 
 

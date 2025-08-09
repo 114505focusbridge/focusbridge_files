@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DiaryService {
-  static const String baseUrl = 'http://10.0.2.2:8000'; // ✅ 根據本地 Django IP 調整
+  static const String baseUrl = 'http://127.0.0.1:8000/';
+
+ // ✅ 根據本地 Django IP 調整
 
   /// ✅ 建立日記並取得 AI 分析結果
   static Future<Map<String, dynamic>> createDiary({

@@ -1,5 +1,5 @@
 # backend/backend/urls.py
-
+from api.views import AchievementListView
 from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
@@ -26,6 +26,8 @@ urlpatterns = [
 
     # 取得 Token 的端點
     path('api/auth/token/', obtain_auth_token, name='api-token-auth'),
+
+    path('api/achievements/', AchievementListView.as_view(), name='achievements'),
 ]
 
 # 媒體檔案伺服

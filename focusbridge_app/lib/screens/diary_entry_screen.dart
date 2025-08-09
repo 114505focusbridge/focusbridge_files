@@ -91,6 +91,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
       if (!mounted) return;
 
       if (result['success'] == true) {
+        _controller.clear(); // 清除輸入欄
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -124,13 +125,11 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(_formattedDate, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 4),
-            Text(
-              '今天是："$_emotionLabel"',
-              style: const TextStyle(fontSize: 14),
-            ),
+            Text('今天是「$_emotionLabel」', style: const TextStyle(fontSize: 14)),
           ],
         ),
         backgroundColor: const Color(0xFF9CAF88),
@@ -164,6 +163,8 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
                   ),
                 ),
               ),
@@ -180,10 +181,7 @@ class _DiaryEntryScreenState extends State<DiaryEntryScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          '存入心情存摺',
-                          style: TextStyle(fontSize: 18),
-                        ),
+                      : const Text('存入心情存摺', style: TextStyle(fontSize: 18)),
                 ),
               ),
             ],
