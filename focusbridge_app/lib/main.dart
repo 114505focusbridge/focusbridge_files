@@ -1,5 +1,4 @@
 // lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -46,6 +45,7 @@ class MyApp extends StatelessWidget {
             title: 'All Day Health Diary',
             debugShowCheckedModeBanner: false,
 
+            // 依使用者偏好限制整體字體縮放
             builder: (context, child) {
               return MediaQuery.withClampedTextScaling(
                 minScaleFactor: pref.fontScale,
@@ -54,6 +54,7 @@ class MyApp extends StatelessWidget {
               );
             },
 
+            // 主題：加入中文字型 fallback，避免亂碼
             theme: ThemeData(
               primarySwatch: Colors.green,
               scaffoldBackgroundColor: const Color(0xFFFFFADD),
@@ -63,6 +64,18 @@ class MyApp extends StatelessWidget {
                   TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
                 },
               ),
+              fontFamilyFallback: const [
+                // Android 常見
+                'Noto Sans CJK TC',
+                'Noto Sans TC',
+                'Noto Sans',
+                'Roboto',
+                // iOS 常見
+                'PingFang TC',
+                'Heiti TC',
+                // Windows（如有桌面測）
+                'Microsoft JhengHei',
+              ],
             ),
 
             initialRoute: '/',
@@ -86,10 +99,14 @@ class MyApp extends StatelessWidget {
               '/profile_settings': (c) => const ProfileSettingsScreen(),
             },
 
-            /// 🧠 動態處理 /post_entry 和 /reset_password/:uid/:token
+            // 動態路由
             onGenerateRoute: (settings) {
-              if (settings.name == '/post_entry') {
-                final args = settings.arguments as Map<String, dynamic>;
+              final name = settings.name ?? '';
+
+              // /post_entry（帶參數）
+              if (name == '/post_entry') {
+                final args =
+                    (settings.arguments as Map<String, dynamic>?) ?? const {};
                 return MaterialPageRoute(
                   builder: (_) => PostEntryScreen(
                     emotionLabel: args['emotionLabel'],
@@ -101,20 +118,28 @@ class MyApp extends StatelessWidget {
                 );
               }
 
-              if (settings.name?.startsWith('/reset_password/') == true) {
-                final uri = Uri.parse(settings.name!);
-                final segments = uri.pathSegments;
-                if (segments.length == 3 && segments[0] == 'reset_password') {
-                  final uid = segments[1];
-                  final token = segments[2];
+              // /reset_password/:uid/:token
+              if (name.startsWith('/reset_password/')) {
+                final seg = Uri.parse(name).pathSegments; // [reset_password, uid, token]
+                if (seg.length == 3 && seg[0] == 'reset_password') {
+                  final uid = seg[1];
+                  final token = seg[2];
                   return MaterialPageRoute(
                     builder: (_) => ResetPasswordScreen(uid: uid, token: token),
                   );
                 }
               }
 
+              // 交回 routes；若沒對應，會落到 onUnknownRoute
               return null;
             },
+
+            // 找不到路由時的保底頁
+            onUnknownRoute: (settings) => MaterialPageRoute(
+              builder: (_) => const Scaffold(
+                body: Center(child: Text('找不到頁面（404）')),
+              ),
+            ),
           );
         },
       ),

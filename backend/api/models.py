@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 class MoodLog(models.Model):
     GENDER_CHOICES = [
@@ -154,3 +155,18 @@ class Diary(models.Model):
 
     def __str__(self):
         return f"Diary {self.id} by {self.user.username} @ {self.created_at}"
+
+class Todo(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='todos')
+    title = models.CharField(max_length=200)
+    date = models.DateField(db_index=True)                 # 要顯示哪一天（我們先做「只看今天」）
+    time = models.TimeField(null=True, blank=True)         # 可選的時間（右側 10:00/12:00 之類）
+    is_done = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['is_done', 'time', 'created_at']       # 未完成在前，再依時間/建立順序
+
+    def __str__(self):
+        t = self.time.strftime('%H:%M') if self.time else '--:--'
+        return f"{self.user.username} | {self.date} {t} | {self.title}"
