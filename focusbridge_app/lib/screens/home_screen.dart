@@ -36,7 +36,7 @@ class HomeScreen extends StatelessWidget {
                     crossAxisCount: 3,
                     mainAxisSpacing: 20,
                     crossAxisSpacing: 20,
-                    childAspectRatio: 0.5,
+                    childAspectRatio: 0.42,
                   ),
                   itemCount: _emotionLabels.length,
                   itemBuilder: (context, index) {
