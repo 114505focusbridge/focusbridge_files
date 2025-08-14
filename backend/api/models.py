@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+
 class MoodLog(models.Model):
     GENDER_CHOICES = [
         ('male', '男'),
@@ -144,28 +145,64 @@ class DiaryTitle(models.Model):
 
 
 class Diary(models.Model):
+    """
+    擴充後支援：
+    - date：這篇日記屬於哪一天（配合月曆與 by-date 查詢）
+    - title / mood / mood_color / weather_icon：供月曆格顯示與 UI 使用
+    - emotion：保留舊欄位（可放中文：快樂/悲傷…），相容你既有前端
+    - (user, date) 唯一：同一用戶一天一篇（若要允許一天多篇可移除 constraints）
+    """
+    MOOD_CHOICES = [
+        ('sunny',  'Sunny'),
+        ('cloudy', 'Cloudy'),
+        ('rain',   'Rain'),
+        ('storm',  'Storm'),
+        ('windy',  'Windy'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    emotion = models.CharField(max_length=20)
+
+    # 🔹 新增
+    date = models.DateField(default=timezone.localdate)        # 當地今天
+    title = models.CharField(max_length=100, blank=True)
+    mood = models.CharField(max_length=12, choices=MOOD_CHOICES, blank=True)
+    mood_color = models.CharField(max_length=7, blank=True)    # '#RRGGBB'
+    weather_icon = models.CharField(max_length=20, blank=True) # 'sunny' / 'rain' ...
+
+    # 既有欄位
+    emotion = models.CharField(max_length=20)                  # 可放中文顯示用
     content = models.TextField()
-    sentiment = models.CharField(max_length=20, blank=True)  # AI 分析情緒標籤
-    keywords = models.TextField(blank=True)  # 擷取關鍵詞
-    topics = models.TextField(blank=True)  # 主題分類
-    ai_message = models.TextField(blank=True)  # Gemini 給的回饋語句
+    sentiment = models.CharField(max_length=20, blank=True)    # AI 分析情緒標籤
+    keywords = models.TextField(blank=True)                    # 擷取關鍵詞
+    topics = models.TextField(blank=True)                      # 主題分類
+    ai_message = models.TextField(blank=True)                  # AI 回饋
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'date']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'date'], name='uniq_user_date'),
+        ]
 
     def __str__(self):
-        return f"Diary {self.id} by {self.user.username} @ {self.created_at}"
+        d = self.date.isoformat() if self.date else self.created_at.date().isoformat()
+        return f"Diary {self.id} by {self.user.username} @ {d}"
+
 
 class Todo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='todos')
     title = models.CharField(max_length=200)
-    date = models.DateField(db_index=True)                 # 要顯示哪一天（我們先做「只看今天」）
-    time = models.TimeField(null=True, blank=True)         # 可選的時間（右側 10:00/12:00 之類）
+    date = models.DateField(db_index=True)                 # 要顯示哪一天
+    time = models.TimeField(null=True, blank=True)         # 可選的時間
     is_done = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['is_done', 'time', 'created_at']       # 未完成在前，再依時間/建立順序
+        ordering = ['-date', '-created_at']
+        indexes = [models.Index(fields=['user', 'date'])]       # 未完成在前，再依時間/建立順序
 
     def __str__(self):
         t = self.time.strftime('%H:%M') if self.time else '--:--'

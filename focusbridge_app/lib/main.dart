@@ -25,7 +25,18 @@ import 'package:focusbridge_app/screens/forgot_password_screen.dart';
 import 'package:focusbridge_app/screens/reset_password_screen.dart';
 import 'package:focusbridge_app/screens/profile_settings_screen.dart';
 
-void main() {
+// ⬇️ 新增：intl 本地化
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+// ⬇️ 新增：Flutter 元件本地化（日期選擇器、按鈕文字等）
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // 初始化 zh_TW（你有用 DateFormat(..., 'zh_TW')）
+  await initializeDateFormatting('zh_TW');
+  // （可選）設定預設語系，之後 DateFormat() 可不再每次傳 locale
+  Intl.defaultLocale = 'zh_TW';
   runApp(const MyApp());
 }
 
@@ -44,6 +55,15 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'All Day Health Diary',
             debugShowCheckedModeBanner: false,
+
+            // 讓 Flutter 元件也有本地化字串
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            supportedLocales: const [
+              Locale('zh', 'TW'),
+              Locale('en', 'US'),
+            ],
+            // （可選）固定成繁中台灣；若想跟系統語言走，可移除這行
+            locale: const Locale('zh', 'TW'),
 
             // 依使用者偏好限制整體字體縮放
             builder: (context, child) {
@@ -64,16 +84,14 @@ class MyApp extends StatelessWidget {
                   TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
                 },
               ),
+              // 如果這裡的 fontFamilyFallback 編譯報錯，改成在 TextTheme 上設定
               fontFamilyFallback: const [
-                // Android 常見
                 'Noto Sans CJK TC',
                 'Noto Sans TC',
                 'Noto Sans',
                 'Roboto',
-                // iOS 常見
                 'PingFang TC',
                 'Heiti TC',
-                // Windows（如有桌面測）
                 'Microsoft JhengHei',
               ],
             ),
@@ -99,11 +117,9 @@ class MyApp extends StatelessWidget {
               '/profile_settings': (c) => const ProfileSettingsScreen(),
             },
 
-            // 動態路由
             onGenerateRoute: (settings) {
               final name = settings.name ?? '';
 
-              // /post_entry（帶參數）
               if (name == '/post_entry') {
                 final args =
                     (settings.arguments as Map<String, dynamic>?) ?? const {};
@@ -118,9 +134,8 @@ class MyApp extends StatelessWidget {
                 );
               }
 
-              // /reset_password/:uid/:token
               if (name.startsWith('/reset_password/')) {
-                final seg = Uri.parse(name).pathSegments; // [reset_password, uid, token]
+                final seg = Uri.parse(name).pathSegments;
                 if (seg.length == 3 && seg[0] == 'reset_password') {
                   final uid = seg[1];
                   final token = seg[2];
@@ -129,12 +144,9 @@ class MyApp extends StatelessWidget {
                   );
                 }
               }
-
-              // 交回 routes；若沒對應，會落到 onUnknownRoute
               return null;
             },
 
-            // 找不到路由時的保底頁
             onUnknownRoute: (settings) => MaterialPageRoute(
               builder: (_) => const Scaffold(
                 body: Center(child: Text('找不到頁面（404）')),
