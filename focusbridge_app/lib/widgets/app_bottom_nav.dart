@@ -18,7 +18,7 @@ class AppBottomNav extends StatelessWidget {
         Navigator.pushReplacementNamed(ctx, '/achievements');
         break;
       case 2:
-        Navigator.pushReplacementNamed(ctx, '/diary_entry');
+        Navigator.pushReplacementNamed(ctx, '/calendar');
         break;
       case 3:
         Navigator.pushReplacementNamed(ctx, '/profile');
@@ -46,7 +46,7 @@ class AppBottomNav extends StatelessWidget {
       items: const [
         TabItem(icon: Icons.home, title: '首頁'),
         TabItem(icon: Icons.emoji_events, title: '成就'),
-        TabItem(icon: Icons.book, title: '日記'),
+        TabItem(icon: Icons.book, title: '日曆'),
         TabItem(icon: Icons.person, title: '個人'),
         TabItem(icon: Icons.settings, title: '設定'),
         TabItem(icon: Icons.mood, title: '相簿'),

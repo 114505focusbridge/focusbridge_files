@@ -1,3 +1,4 @@
+# backend/api/serializers.py
 from django.contrib.auth.models import User
 from django.utils import timezone
 from rest_framework import serializers
@@ -62,17 +63,28 @@ class MoodLogSerializer(serializers.ModelSerializer):
         read_only_fields = ['user']
 
 
-# ✅ 日記序列化器（補齊 AI 欄位，唯讀回傳）
+# ✅ 日記序列化器（補齊新欄位；AI 欄位唯讀）
 class DiarySerializer(serializers.ModelSerializer):
+    """
+    說明：
+    - 為了支援月曆與編輯，補上 date/title/mood/mood_color/weather_icon。
+    - AI 相關欄位（sentiment/keywords/topics/ai_message）唯讀，交由後端分析產生。
+    - user/created_at 亦唯讀。
+    """
     class Meta:
         model = Diary
         fields = [
-            'id', 'user', 'created_at', 'emotion', 'content',
-            'sentiment', 'keywords', 'topics', 'ai_message'
+            'id', 'user', 'created_at',
+            # 新增/可編輯欄位（若模型無這些欄位，保持遷移一致即可）
+            'date', 'title', 'emotion', 'mood', 'mood_color', 'weather_icon',
+            # 內容
+            'content',
+            # AI 分析（唯讀）
+            'sentiment', 'keywords', 'topics', 'ai_message',
         ]
         read_only_fields = [
             'id', 'user', 'created_at',
-            'sentiment', 'keywords', 'topics', 'ai_message'
+            'sentiment', 'keywords', 'topics', 'ai_message',
         ]
 
 
@@ -101,7 +113,7 @@ class UserAchievementSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'achTitle', 'achContent']
 
 
-# ✅ 新增：今日備忘錄 / To-Do 序列化器
+# ✅ 今日備忘錄 / To-Do 序列化器
 class TodoSerializer(serializers.ModelSerializer):
     # 不讓前端指定 user，由後端帶入；回傳時給 user id（如不需要可移除這行）
     user = serializers.ReadOnlyField(source='user.id')
@@ -124,9 +136,9 @@ class TodoSerializer(serializers.ModelSerializer):
         if 'date' not in validated_data or validated_data['date'] is None:
             validated_data['date'] = timezone.localdate()
 
-        # 從 context 塞入使用者
+        # 從 context 塞入使用者（ViewSet 也有 perform_create，可兩邊擇一）
         request = self.context.get('request')
-        if request and request.user and request.user.is_authenticated:
+        if request and getattr(request, 'user', None) and request.user.is_authenticated:
             validated_data['user'] = request.user
 
         return super().create(validated_data)
