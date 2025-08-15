@@ -1,30 +1,35 @@
 // lib/models/achievement.dart
-class Achievement {
+class AchievementItem {
   final String id;
-  final String achTitle;
-  final String achContent;
-  final double progress;
-  final bool unlocked;
-  final bool isDaily;
+  final String title;        // 後端: "title"
+  final String desc;         // 後端: "desc"
+  final int amount;          // 後端: "amount"（情緒餘額）
+  final bool isDaily;        // 後端: "is_daily"
+  final bool claimable;      // 後端: "claimable"
+  final bool claimedToday;   // 後端: "claimed_today"（僅每日型用）
+  final bool unlocked;       // 後端: "unlocked"（里程碑是否已領）
 
-  Achievement({
+  AchievementItem({
     required this.id,
-    required this.achTitle,
-    required this.achContent,
-    required this.progress,
-    required this.unlocked,
+    required this.title,
+    required this.desc,
+    required this.amount,
     required this.isDaily,
+    required this.claimable,
+    required this.claimedToday,
+    required this.unlocked,
   });
 
-  factory Achievement.fromJson(Map<String, dynamic> json) {
-    return Achievement(
+  factory AchievementItem.fromJson(Map<String, dynamic> json) {
+    return AchievementItem(
       id: json['id'] as String,
-      achTitle: json['ach_title'] as String,
-      achContent: json['ach_content'] as String,
-      progress: (json['progress'] as num).toDouble(),
-      unlocked: json['unlocked'] as bool,
-      isDaily: json['is_daily'] as bool,
+      title: (json['title'] ?? '').toString(),
+      desc: (json['desc'] ?? '').toString(),
+      amount: (json['amount'] as num?)?.toInt() ?? 0,
+      isDaily: json['is_daily'] as bool? ?? false,
+      claimable: json['claimable'] as bool? ?? false,
+      claimedToday: json['claimed_today'] as bool? ?? false,
+      unlocked: json['unlocked'] as bool? ?? false,
     );
   }
 }
-

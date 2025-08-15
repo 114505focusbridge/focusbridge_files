@@ -22,12 +22,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _gender;
   String? _birth;
   String? _avatarUrl;
-  int _balance = 0;
   bool _isLoading = true;
+
+  // 💰 情緒餘額
+  int _balance = 0;
+  bool _walletLoading = false;
+  String? _walletError;
 
   // ⬇️ 今日備忘錄狀態
   final TodoService _todoService = TodoService(
-    // USB 実機 + adb reverse ➜ 用 127.0.0.1:8000/api
+    // USB 實機 + adb reverse ➜ 用 127.0.0.1:8000/api
+    // Android 模擬器請改成 http://10.0.2.2:8000/api
     baseUrl: 'http://127.0.0.1:8000/api',
     tokenProvider: AuthService.getToken,
   );
@@ -38,6 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _fetchProfile();
+    _loadWallet();        // ✅ 進頁就抓情緒餘額
     _loadTodayTodos();
   }
 
@@ -64,7 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() => _isLoading = false);
           return;
         }
-        final List data = jsonDecode(response.body);
+        final List data = jsonDecode(utf8.decode(response.bodyBytes));
         if (data.isNotEmpty) {
           final user = data.last;
           setState(() {
@@ -84,6 +90,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       debugPrint('❌ Profile 載入錯誤: $e');
       setState(() => _isLoading = false);
+    }
+  }
+
+  // ===== 💰 Wallet：抓取餘額 =====
+  Future<void> _loadWallet() async {
+    setState(() {
+      _walletLoading = true;
+      _walletError = null;
+    });
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) throw Exception('尚未登入');
+
+      final url = Uri.parse('http://127.0.0.1:8000/api/wallet/');
+      final res = await http.get(
+        url,
+        headers: {'Authorization': 'Token $token', 'Accept': 'application/json'},
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+        final bal = (data['balance'] as num?)?.toInt() ?? 0;
+        if (!mounted) return;
+        setState(() => _balance = bal);
+      } else {
+        final txt = utf8.decode(res.bodyBytes);
+        if (!mounted) return;
+        setState(() => _walletError = '取得錢包失敗（${res.statusCode}）：$txt');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _walletError = '取得錢包失敗：$e');
+    } finally {
+      if (mounted) setState(() => _walletLoading = false);
     }
   }
 
@@ -352,28 +392,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '💰 情緒餘額: \$$_balance',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              // TODO: 前往商店購買
-                            },
-                            icon: const Icon(Icons.shopping_cart_outlined),
-                          ),
-                        ],
-                      ),
-                    ),
+
+                    // 💰 情緒餘額卡片（可重整）
+                    _walletCard(),
+
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -392,6 +414,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
       bottomNavigationBar: AppBottomNav(currentIndex: 3),
+    );
+  }
+
+  // 💰 Wallet UI
+  Widget _walletCard() {
+    if (_walletLoading) {
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: const ListTile(
+          leading: SizedBox(
+            height: 24, width: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          title: Text('讀取情緒餘額中...'),
+        ),
+      );
+    }
+    if (_walletError != null) {
+      return Card(
+        color: Colors.red.shade50,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ListTile(
+          leading: const Icon(Icons.error_outline, color: Colors.red),
+          title: const Text('無法取得情緒餘額'),
+          subtitle: Text(_walletError!, maxLines: 2, overflow: TextOverflow.ellipsis),
+          trailing: IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: '重新整理',
+            onPressed: _loadWallet,
+          ),
+        ),
+      );
+    }
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: const Icon(Icons.account_balance_wallet),
+        title: const Text('情緒餘額'),
+        subtitle: Text('$_balance'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: '重新整理',
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadWallet,
+            ),
+            IconButton(
+              tooltip: '前往兌換（預留）',
+              icon: const Icon(Icons.shopping_cart_outlined),
+              onPressed: () {
+                // TODO: 導向兌換頁（之後要做商店）
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
