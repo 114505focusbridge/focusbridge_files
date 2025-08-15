@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>情緒日記分析</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">📝 情緒日記分析網頁</h1>
+
+    <label for="diary" class="block text-gray-700 font-semibold mb-2">請輸入今日日記：</label>
+    <textarea id="diary" rows="6" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"></textarea>
+
+    <button id="analyzeBtn" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-xl w-full">送出分析</button>
+
+    <div id="result" class="mt-6 hidden">
+      <h2 class="text-xl font-bold mb-2">🔍 分析結果</h2>
+      <p><strong>情緒傾向：</strong><span id="sentiment"></span></p>
+      <p><strong>情緒詞彙：</strong><span id="keywords"></span></p>
+      <p><strong>主題分類：</strong><span id="topics"></span></p>
+      <p class="mt-2"><strong>AI 鼓勵語：</strong><span id="message"></span></p>
+    </div>
+  </div>
+
+  <script>
+     // 建立loading動畫函式
+  function createLoadingAnimation(element) {
+    let dots = 0;
+    return setInterval(() => {
+      dots = (dots + 1) % 4;
+      element.textContent = "正在分析您的情緒" + ".".repeat(dots);
+    }, 500);
+  }
+
+  document.getElementById('analyzeBtn').addEventListener('click', async () => {
+    const diary = document.getElementById('diary').value;
+    if (!diary.trim()) return alert("請先輸入日記內容！");
+
+    const resultDiv = document.getElementById('result');
+    const messageSpan = document.getElementById('message');
+
+    // 顯示結果區，並先顯示loading文字
+    resultDiv.classList.remove('hidden');
+    messageSpan.textContent = "正在分析您的情緒";
+
+    // 開始loading動畫
+    const loadingInterval = createLoadingAnimation(messageSpan);
+
+    try {
+      const res = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: diary })
+      });
+
+      const data = await res.json();
+
+      // 請求結束，停止loading動畫
+      clearInterval(loadingInterval);
+
+      // 顯示結果
+      document.getElementById('sentiment').textContent = data.sentiment;
+      document.getElementById('keywords').textContent = data.keywords.join('、');
+      document.getElementById('topics').textContent = data.topics.join('、');
+      messageSpan.textContent = data.message;
+
+    } catch (error) {
+      clearInterval(loadingInterval);
+      messageSpan.textContent = "分析失敗，請稍後再試。";
+      console.error("分析錯誤:", error);
+    }
+  });
+  </script>
+</body>
+</html>
