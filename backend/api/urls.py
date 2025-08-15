@@ -10,37 +10,36 @@ from .views import (
     MoodLogViewSet,
     DiaryViewSet,
     PhotoViewSet,
-    # ⬇️ 新增
     TodoViewSet,
-    # ⬇️ 若想用客製化登入，取消註解下一行並在下方路由切換
+    # ⬇️ 新增：成就 / 領取 / 錢包
+    AchievementListView,
+    AchievementClaimView,
+    WalletView,
+    # 若要用客製化登入，改用下面這個
     # CustomObtainAuthToken,
-    # ⬇️ AchievementListView 先不要註冊，等之後修好對應的 Serializer 再放
-    # AchievementListView,
 )
 
 router = DefaultRouter()
 router.register(r'moodlogs', MoodLogViewSet, basename='moodlog')
 router.register(r'diaries', DiaryViewSet, basename='diary')
 router.register(r'photos', PhotoViewSet, basename='photo')
-# ⬇️ 新增 To-Do 路由
 router.register(r'todos', TodoViewSet, basename='todo')
 
 urlpatterns = [
-    # 1. 使用者註冊
+    # 1. 使用者註冊 / 登入 / 登出
     path('auth/register/', RegisterAPIView.as_view(), name='register'),
-
-    # 2A. 預設登入（回傳 token）
     path('auth/login/', obtain_auth_token, name='login'),
-
-    # 2B.（可選）改用自訂登入（回傳 token + username）
     # path('auth/login/', CustomObtainAuthToken.as_view(), name='login'),
-
-    # 3. 登出
     path('auth/logout/', LogoutView.as_view(), name='logout'),
 
-    # 4. ViewSets
+    # 2. ViewSets
     path('', include(router.urls)),
 
-    # （先別開）成就進度 API：等之後把 Serializer 對 model 對齊再註冊
-    # path('achievements/', AchievementListView.as_view(), name='achievements'),
+    # 3. 成就 & 錢包
+    # 成就列表（含可領/已領狀態）
+    path('achievements/', AchievementListView.as_view(), name='achievements'),
+    # 手動領取情緒餘額
+    path('achievements/claim/', AchievementClaimView.as_view(), name='achievements-claim'),
+    # 錢包（查餘額與最近流水）
+    path('wallet/', WalletView.as_view(), name='wallet'),
 ]

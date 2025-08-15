@@ -1,9 +1,15 @@
+// lib/screens/post_entry_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
 import 'package:focusbridge_app/services/auth_service.dart';
-import 'package:focusbridge_app/models/achievement.dart';
+import 'package:focusbridge_app/models/achievement.dart'; // 要使用 AchievementItem 版本
+
+// 實機+USB: http://127.0.0.1:8000（先 adb reverse tcp:8000 tcp:8000）
+// 模擬器:     http://10.0.2.2:8000
+const String _base = 'http://127.0.0.1:8000';
 
 class PostEntryScreen extends StatefulWidget {
   final String emotionLabel;
@@ -29,49 +35,68 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
   @override
   void initState() {
     super.initState();
-    _checkJustUnlockedAchievement();
+    _maybePromptClaimables();
   }
 
-  Future<void> _checkJustUnlockedAchievement() async {
+  Future<void> _maybePromptClaimables() async {
     final token = await AuthService.getToken();
     if (token == null) return;
 
-    final url = Uri.parse('http://10.0.2.2:8000/api/achievements/');
+    final url = Uri.parse('$_base/api/achievements/');
     try {
-      final response = await http.get(
-        url,
-        headers: {'Authorization': 'Token $token'},
+      final res = await http.get(url, headers: {'Authorization': 'Token $token'});
+      if (res.statusCode != 200) return;
+
+      final List raw = jsonDecode(utf8.decode(res.bodyBytes)) as List;
+      final items = raw
+          .map((e) => AchievementItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      // 找出目前「可領取」的成就（每日或里程碑）
+      final claimables = items.where((a) => a.claimable == true).toList();
+
+      if (!mounted || claimables.isEmpty) return;
+
+      // 顯示引導使用者前往「成就頁」領取
+      final top = claimables.take(2).toList(); // 最多列兩項，避免太長
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('🎉 有獎勵可以領！'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('以下成就已達成，記得前往領取情緒餘額：'),
+              const SizedBox(height: 8),
+              ...top.map((a) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text('• ${a.title}（+${a.amount}）'),
+                  )),
+              if (claimables.length > top.length)
+                Text('…還有 ${claimables.length - top.length} 項'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('稍後'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/achievements');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9CAF88),
+              ),
+              child: const Text('去領取'),
+            ),
+          ],
+        ),
       );
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-        for (var item in data) {
-          if (item['just_unlocked'] == true) {
-            final ach = Achievement.fromJson(item);
-            if (context.mounted) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text("🎉 成就解鎖！"),
-                    content: Text("你完成了「${ach.achTitle}」成就！"),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("太棒了！"),
-                      ),
-                    ],
-                  ),
-                );
-              });
-            }
-            break;
-          }
-        }
-      } else {
-        debugPrint("❌ 成就 API 回傳錯誤：${response.body}");
-      }
-    } catch (e) {
-      debugPrint("❌ 取得成就失敗：$e");
+    } catch (_) {
+      // 靜默失敗即可，避免影響主流程
     }
   }
 
@@ -91,9 +116,8 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final translatedLabel = _translateLabel(widget.aiLabel);
-    final aiMessageText = widget.aiMessage.trim().isNotEmpty
-        ? widget.aiMessage
-        : '（AI 尚未回應建議）';
+    final aiMessageText =
+        widget.aiMessage.trim().isNotEmpty ? widget.aiMessage : '（AI 尚未回應建議）';
 
     return Scaffold(
       appBar: AppBar(
@@ -195,7 +219,7 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                           ),
                           ElevatedButton(
                             onPressed: () {
-                              Navigator.pushNamed(context, '/diary');
+                              Navigator.pushNamed(context, '/diary_entry');
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF9CAF88),

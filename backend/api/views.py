@@ -1,7 +1,7 @@
 # backend/api/views.py
 from django.contrib.auth.models import User
 from django.db import IntegrityError
-from django.db.models import F, Q
+from django.db.models import F
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from datetime import datetime, timedelta
@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from rest_framework import (
     generics, viewsets, permissions, status, parsers, authentication
 )
-from rest_framework import serializers as drf_serializers
+    # serializers as drf_serializers 只在舊的 AchievementListView 內嵌用到，現在可移除
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.authtoken.models import Token
@@ -18,17 +18,28 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 
-from .models import MoodLog, Diary, Photo, UserAchievementProgress, Todo
+from .models import (
+    MoodLog, Diary, Photo, UserAchievementProgress, Todo,
+    Achievement, ExpLog
+)
 from .serializers import (
     UserRegisterSerializer,
     MoodLogSerializer,
     DiarySerializer,
     PhotoSerializer,
-    UserAchievementSerializer,  # 可能未使用，但保留
+    UserAchievementSerializer,  # 保留
     TodoSerializer,
 )
-from .utils.achievement import update_achievement_progress
 from .utils.emotion_models import analyze_sentiment
+
+# ✅ 成就/錢包共用邏輯改用 utils，避免重複
+from .utils.achievement import (
+    update_achievement_progress,
+    claim_achievement,
+    get_status,
+    current_balance,
+    is_claimable,
+)
 
 
 # ===================== 使用者註冊 / 登入 / 登出 =====================
@@ -101,7 +112,6 @@ class DiaryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Diary.objects.filter(user=self.request.user).order_by('-created_at')
 
-    # ---------- 工具：僅在模型有該欄位時才設定，避免尚未遷移炸錯 ----------
     @staticmethod
     def _has_field(obj, field_name: str) -> bool:
         return hasattr(obj, field_name)
@@ -135,7 +145,7 @@ class DiaryViewSet(viewsets.ModelViewSet):
         # 分析情緒
         label, ai_message, keywords, topics = analyze_sentiment(content)
 
-        # 🔁 upsert：已存在同一天 → 視為更新，避免 UNIQUE(user,date) 衝突
+        # 🔁 upsert：同一天已存在 → 視為更新，避免 UNIQUE(user,date) 衝突
         diary = Diary.objects.filter(user=user, date=dt).first()
         if diary:
             diary.content = content
@@ -190,7 +200,7 @@ class DiaryViewSet(viewsets.ModelViewSet):
             diary.topics = ", ".join(topics)
         diary.save()
 
-        # 成就（非關鍵，失敗不阻擋）
+        # 成就：只記錄進度，不自動發點數（手動領取）
         try:
             update_achievement_progress(user, 'first_diary', increment=1.0)
             update_achievement_progress(user, 'third_diary', increment=1.0)
@@ -349,26 +359,97 @@ class PhotoViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-# ===================== 成就進度 =====================
+# ===================== 成就 & 錢包（手動領取情緒餘額） =====================
 
 class AchievementListView(APIView):
+    """
+    GET /api/achievements/
+    回傳所有成就的狀態（手動領取版）
+    """
     permission_classes = [IsAuthenticated]
 
-    class UserAchievementProgressSerializer(drf_serializers.ModelSerializer):
-        id = drf_serializers.ReadOnlyField(source='achievement.id')
-        achTitle = drf_serializers.ReadOnlyField(source='achievement.achTitle')
-        achContent = drf_serializers.ReadOnlyField(source='achievement.achContent')
-        exp = drf_serializers.ReadOnlyField(source='achievement.exp')
-        is_daily = drf_serializers.ReadOnlyField(source='achievement.is_daily')
+    def get(self, request):
+        user = request.user
+        items = []
+        for ach in Achievement.objects.all().order_by('is_daily', 'id'):
+            status_dict = get_status(user, ach)  # {"claimable", "claimed_today", "unlocked"}
+            items.append({
+                "id": ach.id,
+                "title": ach.achTitle,
+                "desc": ach.achContent,
+                "amount": ach.exp,           # 要發放的情緒餘額
+                "is_daily": ach.is_daily,
+                **status_dict,
+            })
+        return Response(items, status=200)
 
-        class Meta:
-            model = UserAchievementProgress
-            fields = ['id', 'achTitle', 'achContent', 'exp', 'is_daily', 'progress', 'unlocked']
+
+class AchievementClaimView(APIView):
+    """
+    POST /api/achievements/claim/
+    body: {"id": "<achievement_id>"}
+    依條件判斷是否可領，成功則寫入 ExpLog（情緒餘額入帳）
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        aid = (request.data.get('id') or '').strip()
+        if not aid:
+            return Response({"detail": "缺少成就 id"}, status=400)
+
+        ach = Achievement.objects.filter(pk=aid).first()
+        if not ach:
+            return Response({"detail": "成就不存在"}, status=404)
+
+        # 先看是否「已領」（用 get_status）
+        pre = get_status(user, ach)
+        if ach.is_daily and pre.get("claimed_today"):
+            return Response({"detail": "今天已領取"}, status=409)
+        if not ach.is_daily and pre.get("unlocked"):
+            return Response({"detail": "已領取過"}, status=409)
+
+        # 再確認是否可領
+        if not is_claimable(user, ach):
+            return Response({"detail": "尚未達成領取條件"}, status=400)
+
+        ok, payload = claim_achievement(user, aid)
+        if not ok:
+            # payload = {"detail": "..."}
+            return Response(payload, status=400)
+
+        # payload = {"id", "amount", "balance", "status": {...}}
+        return Response({"ok": True, **payload}, status=200)
+
+
+class WalletView(APIView):
+    """
+    GET /api/wallet/
+    回傳當前情緒餘額與最近流水
+    """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        progress_qs = UserAchievementProgress.objects.filter(user=request.user)
-        serializer = self.UserAchievementProgressSerializer(progress_qs, many=True)
-        return Response(serializer.data)
+        user = request.user
+        balance = current_balance(user)
+        logs = (ExpLog.objects
+                .filter(user=user)
+                .order_by('-get_exp_time', '-id')[:30])
+
+        recent = []
+        for log in logs:
+            recent.append({
+                "time": (log.get_exp_time.astimezone(timezone.get_current_timezone())
+                         if log.get_exp_time else timezone.now()).isoformat(),
+                "delta": log.get_exp,
+                "reason": log.reason,
+                "balance": log.current_total,
+            })
+
+        return Response({
+            "balance": balance,
+            "recent": recent
+        }, status=200)
 
 
 # ===================== 今日備忘錄 / To-Do =====================
