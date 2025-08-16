@@ -260,7 +260,7 @@ class DiaryViewSet(viewsets.ModelViewSet):
         instance.save()
         return Response({"success": True, "data": DiarySerializer(instance).data}, status=200)
 
-    # ---------- 月概覽：/api/diaries/overview/?month=YYYY-MM ----------
+     # ---------- 月概覽：/api/diaries/overview/?month=YYYY-MM ----------
     @action(detail=False, methods=['get'], url_path='overview')
     def overview(self, request):
         month = request.query_params.get('month')
@@ -281,6 +281,11 @@ class DiaryViewSet(viewsets.ModelViewSet):
         result = []
         for obj in qs:
             d = obj.date if self._has_field(obj, 'date') and obj.date else (obj.created_at or timezone.now()).date()
+
+            # ✅ 新增：AI 預覽欄位
+            ai_msg = (getattr(obj, 'ai_message', '') or '').strip()
+            ai_prev = ai_msg.replace('\n', ' ')[:50] if ai_msg else ''
+
             result.append({
                 'id': obj.id,
                 'date': d.isoformat(),
@@ -289,6 +294,9 @@ class DiaryViewSet(viewsets.ModelViewSet):
                 'color': getattr(obj, 'mood_color', None),
                 'has_diary': True,
                 'snippet': (obj.content or '')[:60],
+                # ✅ 新增這兩個鍵
+                'has_ai': bool(ai_msg),
+                'ai_preview': ai_prev,
             })
         return Response(result, status=200)
 
