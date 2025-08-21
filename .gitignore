@@ -45,3 +45,7 @@ focusbridge_app/macos/Flutter/ephemeral/
 **/Pods/
 *.apk
 *.so
+focusbridge_app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+focusbridge_app/ios/Runner/GeneratedPluginRegistrant.*
+focusbridge_app/macos/Flutter/GeneratedPluginRegistrant.swift
+focusbridge_app/linux/flutter/
