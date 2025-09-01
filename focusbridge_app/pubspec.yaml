@@ -1,0 +1,39 @@
+name: focusbridge_app
+description: "A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  http: ^1.2.2
+  provider: ^6.1.2
+  shared_preferences: ^2.3.2
+  image_picker: ^1.1.2
+  cupertino_icons: ^1.0.8
+  intl: ^0.20.2       # ← 關鍵，和 SDK 一致
+  convex_bottom_bar: ^3.2.0
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/LOGO.png
+    - assets/images/emotion_cloud.png
+    - assets/images/emotion_lightning.png
+    - assets/images/emotion_rain.png
+    - assets/images/emotion_snowflake.png
+    - assets/images/emotion_sun.png
+    - assets/images/emotion_tornado.png
