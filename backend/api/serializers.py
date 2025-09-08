@@ -1,19 +1,30 @@
-# api/serializers.py
-
+# backend/api/serializers.py
 from django.contrib.auth.models import User
+from django.utils import timezone
 from rest_framework import serializers
-from .models import MoodLog
 
+from .models import (
+    MoodLog, Diary, Photo, Album, Achievement, Todo
+)
+
+# ✅ 使用者註冊序列化器
 class UserRegisterSerializer(serializers.ModelSerializer):
     """
-    用於註冊的序列化器：
-    - username: 必填
-    - email: 選填
-    - password: 必填
-    - password2: 必填，用來確認兩次密碼一致
+    使用者註冊序列化器：
+    - 欄位: username, email, password, password2
+    - 功能: 檢查密碼一致性、使用者唯一性，建立帳號
     """
-    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-    password2 = serializers.CharField(write_only=True, required=True, label="Confirm Password", style={'input_type': 'password'})
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+    password2 = serializers.CharField(
+        write_only=True,
+        required=True,
+        label="確認密碼",
+        style={'input_type': 'password'}
+    )
 
     class Meta:
         model = User
@@ -23,34 +34,111 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        """
-        驗證 password 與 password2 是否一致。
-        """
-        pw = attrs.get('password')
-        pw2 = attrs.get('password2')
-        if pw != pw2:
-            raise serializers.ValidationError({"password": "密碼欄位不一致。"})
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "兩次密碼不一致。"})
         return attrs
 
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("使用者名稱已存在，請換一個。")
+        return value
+
+    def validate_email(self, value):
+        if value and User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email 已被註冊。")
+        return value
+
     def create(self, validated_data):
-        """
-        移除 password2，使用 create_user 來建立使用者，
-        讓 Django 自動做 password hash。
-        """
         validated_data.pop('password2')
         password = validated_data.pop('password')
         user = User.objects.create_user(password=password, **validated_data)
         return user
 
+
+# ✅ 情緒紀錄序列化器
 class MoodLogSerializer(serializers.ModelSerializer):
-    """
-    用於對 MoodLog 模型做序列化：
-    - id: 自動產生
-    - user: 只讀，不讓客戶端指定
-    - date: 只讀（自動填入）
-    - score, note: 由客戶端輸入
-    """
     class Meta:
         model = MoodLog
-        fields = ['id', 'user', 'date', 'score', 'note']
-        read_only_fields = ['id', 'date', 'user']
+        fields = ['id', 'user', 'name', 'gender', 'birth']
+        read_only_fields = ['user']
+
+
+# ✅ 日記序列化器（補齊新欄位；AI 欄位唯讀）
+class DiarySerializer(serializers.ModelSerializer):
+    """
+    說明：
+    - 為了支援月曆與編輯，補上 date/title/mood/mood_color/weather_icon。
+    - AI 相關欄位（sentiment/keywords/topics/ai_message）唯讀，交由後端分析產生。
+    - user/created_at 亦唯讀。
+    """
+    class Meta:
+        model = Diary
+        fields = [
+            'id', 'user', 'created_at',
+            # 新增/可編輯欄位（若模型無這些欄位，保持遷移一致即可）
+            'date', 'title', 'emotion', 'mood', 'mood_color', 'weather_icon',
+            # 內容
+            'content',
+            # AI 分析（唯讀）
+            'sentiment', 'keywords', 'topics', 'ai_message',
+        ]
+        read_only_fields = [
+            'id', 'user', 'created_at',
+            'sentiment', 'keywords', 'topics', 'ai_message',
+        ]
+
+
+# ✅ 照片序列化器
+class PhotoSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+    emotion = serializers.ChoiceField(choices=Photo.EMOTION_CHOICES)
+    image = serializers.ImageField()
+    uploaded_at = serializers.DateTimeField(read_only=True)
+    album = serializers.PrimaryKeyRelatedField(
+        queryset=Album.objects.all(),
+        allow_null=True,
+        required=False
+    )
+
+    class Meta:
+        model = Photo
+        fields = ['id', 'owner', 'emotion', 'image', 'uploaded_at', 'album']
+
+
+# ✅ 成就（靜態資料）序列化器
+class UserAchievementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Achievement
+        fields = ['id', 'achTitle', 'achContent', 'exp', 'is_daily']
+        read_only_fields = ['id', 'achTitle', 'achContent']
+
+
+# ✅ 今日備忘錄 / To-Do 序列化器
+class TodoSerializer(serializers.ModelSerializer):
+    # 不讓前端指定 user，由後端帶入；回傳時給 user id（如不需要可移除這行）
+    user = serializers.ReadOnlyField(source='user.id')
+    # 允許前端不傳 date，預設今天
+    date = serializers.DateField(required=False)
+    time = serializers.TimeField(required=False, allow_null=True)
+
+    class Meta:
+        model = Todo
+        fields = ['id', 'user', 'title', 'date', 'time', 'is_done', 'created_at']
+        read_only_fields = ['id', 'user', 'created_at']
+
+    def validate_title(self, value: str):
+        if not value or not value.strip():
+            raise serializers.ValidationError("標題不可為空白。")
+        return value.strip()
+
+    def create(self, validated_data):
+        # 預設 date = 今天（若未傳）
+        if 'date' not in validated_data or validated_data['date'] is None:
+            validated_data['date'] = timezone.localdate()
+
+        # 從 context 塞入使用者（ViewSet 也有 perform_create，可兩邊擇一）
+        request = self.context.get('request')
+        if request and getattr(request, 'user', None) and request.user.is_authenticated:
+            validated_data['user'] = request.user
+
+        return super().create(validated_data)

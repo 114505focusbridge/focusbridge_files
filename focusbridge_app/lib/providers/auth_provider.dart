@@ -1,49 +1,24 @@
 // lib/providers/auth_provider.dart
 
-import 'package:flutter/foundation.dart';
-// 將這裡改成你在 pubspec.yaml 裡面設定的 package 名稱
+import 'package:flutter/material.dart';
 import 'package:focusbridge_app/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class AuthProvider extends ChangeNotifier {
-  String? _token; // 儲存目前的 token（如果有）
+class AuthProvider with ChangeNotifier {
+  String? _token;
+
   String? get token => _token;
 
   bool get isAuthenticated => _token != null;
 
-  /// 啟動 App 時，檢查本機是否有存 token
-  Future<void> loadToken() async {
-    try {
-      // 如果你的 AuthService.getToken() 是 static 方法，就這樣呼叫
-      // 如果不是 static，請改成：final savedToken = await AuthService().getToken();
-      final savedToken = await AuthService.getToken();
-      _token = savedToken;
-    } catch (e) {
-      // 如果撈不到 token，也不要讓 App 崩潰
-      _token = null;
-      debugPrint('載入 token 時發生錯誤：$e');
-    }
+  /// 檢查本地儲存的 token，以判斷使用者是否已登入
+  Future<void> checkAuthStatus() async {
+    _token = await AuthService.getToken();
     notifyListeners();
   }
 
-  /// 登入：呼叫 AuthService.login() 並更新狀態
-  Future<void> login(String username, String password) async {
-    try {
-      // 如果 AuthService.login 回傳的是 String token，就直接 assign
-      // 否則若回傳 Map，也可以改成 data['token'] 的寫法
-      final newToken = await AuthService.login(
-        username: username,
-        password: password,
-      );
-      _token = newToken;
-    } catch (e) {
-      _token = null;
-      debugPrint('登入時發生錯誤：$e');
-      rethrow;
-    }
-    notifyListeners();
-  }
-
-  /// 註冊：呼叫 AuthService.register() 並更新狀態
+  /// 註冊新帳號
+  /// 呼叫 AuthService 進行 API 請求，並在成功後更新狀態
   Future<void> register(
     String username,
     String email,
@@ -51,33 +26,50 @@ class AuthProvider extends ChangeNotifier {
     String password2,
   ) async {
     try {
-      // 假設 AuthService.register() 回傳的是 Map，裡面有 token 欄位
-      final data = await AuthService.register(
+      final response = await AuthService.register(
         username: username,
         email: email,
         password: password,
         password2: password2,
       );
-      // 如果 register 直接回傳 token String，就改成：
-      // final newToken = await AuthService.register(...);
-      // _token = newToken;
-      final newToken = data['token'] as String;
-      _token = newToken;
+      
+      // 註冊成功後，自動登入並儲存 token
+      // 確保 response['token'] 不為 null
+      if (response['token'] != null) {
+        _token = response['token'] as String;
+        // 這裡需要新增一個方法來儲存 token
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', _token!);
+        notifyListeners();
+      } else {
+        // 如果後端沒有回傳 token，拋出例外
+        throw Exception('註冊成功，但無法取得登入資訊。');
+      }
     } catch (e) {
-      _token = null;
-      debugPrint('註冊時發生錯誤：$e');
+      // 將 AuthService 拋出的例外重新拋出，讓 UI 層捕捉
       rethrow;
     }
-    notifyListeners();
   }
 
-  /// 登出：呼叫 AuthService.logout() 並清除本機 token
-  Future<void> logout() async {
+  /// 登入帳號
+  /// 呼叫 AuthService 進行登入，並在成功後更新 token
+  Future<void> login(String username, String password) async {
     try {
-      await AuthService.logout();
+      final token = await AuthService.login(
+        username: username,
+        password: password,
+      );
+      _token = token;
+      notifyListeners();
     } catch (e) {
-      debugPrint('登出時發生錯誤：$e');
+      rethrow;
     }
+  }
+
+  /// 登出帳號
+  /// 呼叫 AuthService 進行登出，並清除本地 token
+  Future<void> logout() async {
+    await AuthService.logout();
     _token = null;
     notifyListeners();
   }

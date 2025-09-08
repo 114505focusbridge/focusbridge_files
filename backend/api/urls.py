@@ -3,22 +3,40 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
-from .views import RegisterAPIView, LogoutView, MoodLogViewSet
 
-# 建立 DRF 的 DefaultRouter，並註冊 MoodLogViewSet
+from .views import (
+    RegisterAPIView,
+    LogoutView,
+    MoodLogViewSet,
+    DiaryViewSet,
+    PhotoViewSet,
+    TodoViewSet,
+    AchievementListView,
+    AchievementClaimView,
+    WalletView,
+)
+
+# 創建路由器實例
 router = DefaultRouter()
+
+# 註冊 ViewSets
+# router 會自動為這些 ViewSets 創建 URL 規則 (list, create, retrieve, update, delete)
 router.register(r'moodlogs', MoodLogViewSet, basename='moodlog')
+router.register(r'diaries', DiaryViewSet, basename='diary')
+router.register(r'photos', PhotoViewSet, basename='photo')
+router.register(r'todos', TodoViewSet, basename='todo')
 
 urlpatterns = [
-    # 1. 使用者註冊：POST /api/auth/register/
+    # 1. 路由器 URL，這裡不再重複加上 'api/' 前綴
+    path('', include(router.urls)),
+
+    # 2. 獨立的認證相關 API，也移除 'api/' 前綴
     path('auth/register/', RegisterAPIView.as_view(), name='register'),
-
-    # 2. 使用者登入（取得 Token）：POST /api/auth/login/
     path('auth/login/', obtain_auth_token, name='login'),
-
-    # 3. 使用者登出（刪除 Token）：POST /api/auth/logout/
     path('auth/logout/', LogoutView.as_view(), name='logout'),
 
-    # 4. MoodLogViewSet 相關的所有操作，對應 /api/moodlogs/ 與 /api/moodlogs/{pk}/
-    path('', include(router.urls)),
+    # 3. 成就與錢包相關 API，也移除 'api/' 前綴
+    path('achievements/', AchievementListView.as_view(), name='achievements'),
+    path('achievements/claim/', AchievementClaimView.as_view(), name='achievements-claim'),
+    path('wallet/', WalletView.as_view(), name='wallet'),
 ]

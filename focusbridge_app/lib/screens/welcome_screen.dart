@@ -8,7 +8,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 背景顏色在 main.dart 已設為 Color(0xFFFFFADD)
+      backgroundColor: const Color(0xFFF5F5F5), // 跟登入頁統一淡色背景
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -21,28 +21,26 @@ class WelcomeScreen extends StatelessWidget {
               const Text(
                 'All Day',
                 style: TextStyle(
-                  fontSize: 48,
+                  fontSize: 36,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Color(0xFF333333),
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
                 'Health Diary',
                 style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.black54,
+                  fontSize: 20,
+                  color: Color(0xFF666666),
                 ),
               ),
               const SizedBox(height: 40),
 
-              // 中央圖示：將原本的 health_diary_icon.png 換成 logo.png
+              // 中央圖示
               CircleAvatar(
                 radius: 60,
                 backgroundColor: Colors.grey.shade200,
                 backgroundImage: const AssetImage('assets/images/LOGO.png'),
-                // 如果 logo.png 路徑不是放在 assets/images/，請改成正確路徑，例如：
-                // backgroundImage: const AssetImage('assets/logo.png'),
               ),
               const SizedBox(height: 60),
 
@@ -59,6 +57,7 @@ class WelcomeScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
+                    elevation: 0, // 跟登入頁一致
                   ),
                   child: const Text(
                     '使用者登入',
@@ -72,19 +71,24 @@ class WelcomeScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: ElevatedButton(
+                child: OutlinedButton(
                   onPressed: () {
                     Navigator.pushNamed(context, '/register');
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9CAF88),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF9CAF88)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
+                    backgroundColor: Colors.white, // 註冊按鈕白底
+                    elevation: 0,
                   ),
                   child: const Text(
                     '註冊',
-                    style: TextStyle(fontSize: 18),
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Color(0xFF9CAF88),
+                    ),
                   ),
                 ),
               ),

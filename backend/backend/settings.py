@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-^+l_kk9ni0h_dokk^4)ufnf_sw2ggkwz%d((xowt*y$mxxmezs
 DEBUG = True
 
 # 若你要在遠端伺服器測試，可暫時設為 ['*']；正式上線時請改為具體網域
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS =  ['*']
 
 # -------------------------------------------------------------------
 # 3. 應用程式定義 (Installed Apps)
@@ -52,6 +52,9 @@ INSTALLED_APPS = [
     # 自建 App
     'api',
 ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # -------------------------------------------------------------------
 # 4. 中介層設定 (Middleware)
@@ -135,7 +138,7 @@ USE_TZ = True
 # 9. 靜態檔案 (Static files) 及媒體檔案 (Media files)
 # -------------------------------------------------------------------
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'         # collectstatic 之後會放到這裡
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')         # collectstatic 之後會放到這裡
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'                 # 上傳的圖片、檔案會儲存在此
@@ -149,14 +152,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 11. Django REST framework 相關設定（可視需求自行擴充）
 # -------------------------------------------------------------------
 REST_FRAMEWORK = {
-    # 預設認證方式可以自行調整為 Token 或 JWT
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
 
 # -------------------------------------------------------------------
 # 12. 其他自訂設定（例如：檔案大小、上傳限制等）
