@@ -357,18 +357,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                     const SizedBox(height: 12),
 
-                                    // 其他登入方式（示意）
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        _socialButton(Icons.g_mobiledata, 'Google'),
-                                        _socialButton(Icons.apple, 'Apple'),
-                                        _socialButton(Icons.facebook, 'FB'),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 6),
-
                                     // 註冊鏈結
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -439,32 +427,5 @@ class _LoginScreenState extends State<LoginScreen> {
         contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       ),
     );
-  }
-
-  // helper: social button (simple)
-  Widget _socialButton(IconData icon, String label) {
-    return InkWell(
-      onTap: () {
-        // placeholder: 可接社群登入
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label 登入尚未實作')));
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 3)),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: Colors.black87),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontSize: 13, color: Colors.black87)),
-          ],
-        ),
-      ),
-    );
-  }
+  }    
 }

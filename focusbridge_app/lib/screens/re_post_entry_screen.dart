@@ -1,3 +1,4 @@
+// lib/screens/re_post_entry_scren.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -18,27 +19,23 @@ const Color _cardBgColor = Color.fromRGBO(250, 246, 233, 1);
 const Color _borderColor = Color.fromRGBO(221, 235, 157, 1);
 const Color _primaryColor = Color.fromRGBO(160, 200, 120, 1);
 
-class PostEntryScreen extends StatefulWidget {
-  final String emotionLabel;
-  final Color emotionColor;
+class RePostEntryScreen extends StatefulWidget {
   final String entryContent;
   final String aiLabel;
   final String aiMessage;
 
-  const PostEntryScreen({
+  const RePostEntryScreen({
     super.key,
-    required this.emotionLabel,
-    required this.emotionColor,
     required this.entryContent,
     required this.aiLabel,
     required this.aiMessage,
   });
 
   @override
-  State<PostEntryScreen> createState() => _PostEntryScreenState();
+  State<RePostEntryScreen> createState() => _RePostEntryScreenState();
 }
 
-class _PostEntryScreenState extends State<PostEntryScreen> {
+class _RePostEntryScreenState extends State<RePostEntryScreen> {
   @override
   void initState() {
     super.initState();
@@ -171,12 +168,6 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 新增一個顯示情緒圖示的卡片
-                        _buildMoodCard(
-                          title: '今天的心情是',
-                          emotionLabel: widget.emotionLabel,
-                          emotionColor: widget.emotionColor,
-                        ),
                         const SizedBox(height: 12),
                         const Text(
                           'AI 分析結果',
@@ -285,88 +276,25 @@ class _PostEntryScreenState extends State<PostEntryScreen> {
     );
   }
 
-  /// 專門用於顯示心情圖示的卡片 (重新編排，更明顯好看)
-  Widget _buildMoodCard({
-    required String title,
-    required String emotionLabel,
-    required Color emotionColor,
-  }
-  ) {
-    final isGenericMood = _assetForEmotion(emotionLabel) == 'assets/images/emotion_cloud.png';
-    if (isGenericMood && emotionLabel.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20), // 增加垂直內邊距
-      // 移除 _cardBgColor、border 和 boxShadow，讓內容更簡潔突出
-      // decoration: BoxDecoration(
-      //   color: _cardBgColor,
-      //   borderRadius: BorderRadius.circular(16),
-      //   border: Border.all(color: _borderColor, width: 1.5),
-      //   boxShadow: [
-      //     BoxShadow(
-      //       color: Colors.black.withOpacity(0.08),
-      //       blurRadius: 8,
-      //       offset: const Offset(0, 4),
-      //     ),
-      //   ],
-      // ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center, // 置中內容
-        crossAxisAlignment: CrossAxisAlignment.center, // 置中內容
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 30, // 標題更大
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16), // 間距
-          Container(
-            width: 150, // 更大的圖示容器
-            height: 150,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15), // 背景色更明顯
-              shape: BoxShape.circle,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(10.0), // 圖示內邊距
-              child: Image.asset(
-                _assetForEmotion(emotionLabel),
-                color: emotionColor,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2), // 間距
-          Text(
-            emotionLabel,
-            style: TextStyle(
-              fontSize: 28, // 情緒文字更大
-              color: emotionColor.darken(15), // 顏色更深一點
-              fontWeight: FontWeight.w600, // 字體更粗
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+  // 因為是補寫日誌，所以不需要這個方法
+  // Widget _buildMoodCard({
+  //   required String title,
+  //   required String emotionLabel,
+  //   required Color emotionColor,
+  // }) {
+  //   // ... (省略原始程式碼)
+  // }
 
   String _assetForEmotion(String emotion) {
     switch (emotion) {
       case '快樂':
         return 'assets/images/emotion_sun.png';
-      case '憤怒':
-        return 'assets/images/emotion_tornado.png';
       case '悲傷':
         return 'assets/images/emotion_cloud.png';
       case '恐懼':
-        return 'assets/images/emotion_lightning.png';
+        return 'assets/images/emotio_lightning.png';
+      case '憤怒':
+        return 'assets/images/emotion_tornado.png';
       case '驚訝':
         return 'assets/images/emotion_snowflake.png';
       default:

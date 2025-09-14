@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:focusbridge_app/widgets/app_bottom_nav.dart';
 import 'package:focusbridge_app/services/diary_service.dart';
 import 'package:focusbridge_app/widgets/glowing_button.dart';
+import 'package:focusbridge_app/widgets/pie_mood_chart.dart'; 
+import 'package:focusbridge_app/widgets/stats_legend.dart';
 
 /// 月曆格需要的最小資訊（概覽）
 class DiaryOverview {
@@ -152,6 +154,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
+String _translateMood(String? mood) {
+  if (mood == null) return '';
+  switch (mood.toLowerCase()) {
+    case 'sunny':
+      return '快樂';
+    case 'storm':
+      return '憤怒';
+    case 'cloud':
+      return '悲傷';
+    case 'lightning':
+      return '恐懼';
+    case 'snowflake':
+      return '驚訝';
+    case 'rain':
+      return '厭惡';
+    default:
+      return '';
+  }
+}
+
 void _onDayTap(DateTime date) {
   showModalBottomSheet(
     context: context,
@@ -284,7 +306,6 @@ void _onDayTap(DateTime date) {
 
                         final mood = (detail['mood'] ?? detail['emotion']) as String?;
                         final colorHex = (detail['color'] ?? detail['mood_color']) as String?;
-                        final emoji = _emoji(mood);
                         final moodColor = _hexColor(colorHex);
                         final content = (detail['content'] ?? '') as String? ?? '';
                         final titleText = (detail['title'] ?? '') as String? ?? '';
@@ -293,32 +314,47 @@ void _onDayTap(DateTime date) {
 
                         return Column(
                           mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start, // 統一靠左對齊
                           children: [
-                            // 情緒標籤（與標題在同一行）
-                            Row(
-                              children: [
-                                if (emoji.isNotEmpty)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: moodColor.withOpacity(.18),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: moodColor.withOpacity(.4)),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Text(emoji, style: const TextStyle(fontSize: 16)),
-                                        const SizedBox(width: 6),
-                                        Text(mood ?? '', style: const TextStyle(fontSize: 12)),
-                                      ],
+                            // --- 情緒標題與圖示 ---
+                            if (mood != null && mood.isNotEmpty)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // 情緒標題 (文字)
+                                  Text(
+                                    _translateMood(mood), // 使用翻譯後的中文標題
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
                                     ),
                                   ),
-                                const Spacer(),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
+                                  const SizedBox(height: 8.0),
 
-                            // 日記內容
+                                  // 情緒圖示 (帶有底色的正方形外框)
+                                  Container(
+                                    width: 150,
+                                    height: 150,
+                                    decoration: BoxDecoration(
+                                      color: moodColor.withOpacity(0.18),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: moodColor.withOpacity(0.5), width: 1.5),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Image.asset(
+                                      _assetForEmotion(mood),
+                                      width: 100,
+                                      height: 100,
+                                      color: moodColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                            const SizedBox(height: 16), // 在圖示區塊和日記內容之間增加間距
+
+                            // --- 日記內容卡片 ---
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.all(14),
@@ -333,25 +369,32 @@ void _onDayTap(DateTime date) {
                                   if (titleText.isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(bottom: 6),
-                                      child: Text(titleText,
-                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                                      child: Text(
+                                        titleText,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
                                     ),
                                   Text(
                                     content.isEmpty ? '（無內容）' : content,
-                                    style: const TextStyle(fontSize: 14, height: 1.5),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      height: 1.5,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-
                             const SizedBox(height: 12),
 
-                            // AI 區塊（保留一張，顯示 AI 建議文字）
+                            // --- AI 區塊 ---
                             _AICard(title: 'AI 回饋', content: aiText ?? '（暫無 AI 回饋）'),
 
                             const SizedBox(height: 24),
 
-                            // 動作
+                            // --- 動作按鈕 ---
                             Row(
                               children: [
                                 Expanded(
@@ -365,10 +408,14 @@ void _onDayTap(DateTime date) {
                                         'diaryId': diaryId,
                                       });
                                     },
-                                    baseColor: const Color.fromARGB(255,111, 230, 252), 
+                                    baseColor: const Color.fromARGB(188, 24, 220, 255),
                                     child: const Text(
-                                      '查看 / 編輯',
-                                      style: TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 16, fontWeight: FontWeight.w700),
+                                      '編輯心情日記',
+                                      style: TextStyle(
+                                        color: Color.fromARGB(255, 255, 255, 255),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -509,7 +556,7 @@ void _onDayTap(DateTime date) {
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 150),
                                     curve: Curves.easeOut,
-                                    padding: const EdgeInsets.all(6), // 減少 padding
+                                    padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(12),
@@ -529,9 +576,7 @@ void _onDayTap(DateTime date) {
                                         ),
                                       ],
                                     ),
-                                    // 使用 LayoutBuilder 控制內部元素大小，並避免 overflow
                                     child: LayoutBuilder(builder: (c, constraints) {
-                                      // 預留給數字、emoji、顏色條的最大高度分配
                                       return Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -547,45 +592,29 @@ void _onDayTap(DateTime date) {
                                             ),
                                           ),
 
-                                          // 小間隔
-                                          const SizedBox(height: 4),
-
-                                          // 中間區域：使用 Expanded 佔據可用空間，內部用 FittedBox 縮放 emoji
+                                          // --- 新增情緒圖示 ---
                                           Expanded(
                                             child: Center(
-                                              child: ov?.hasDiary == true &&
-                                                      _emoji(ov?.mood).isNotEmpty
+                                              child: ov?.hasDiary == true && _assetForEmotion(ov?.mood ?? '').isNotEmpty
                                                   ? FittedBox(
                                                       fit: BoxFit.scaleDown,
-                                                      child: Text(
-                                                        _emoji(ov?.mood),
-                                                        // 大字體但會被 FittedBox 自動縮放到可用大小
-                                                        style:
-                                                            const TextStyle(fontSize: 48),
+                                                      child: Image.asset(
+                                                        _assetForEmotion(ov!.mood!),
+                                                        width: 50,
+                                                        height: 50,
+                                                        color: _hexColor(ov.colorHex),
                                                       ),
                                                     )
                                                   : const SizedBox.shrink(),
                                             ),
                                           ),
 
-                                          const SizedBox(height: 4),
-
-                                          // 顏色條（固定高度，放在最下方）
-                                          if (ov?.hasDiary == true)
-                                            Container(
-                                              height: 6,
-                                              width: double.infinity,
-                                              decoration: BoxDecoration(
-                                                color: _hexColor(ov?.colorHex),
-                                                borderRadius: BorderRadius.circular(5),
-                                              ),
-                                            )
-                                          else
-                                            // 若沒有日記，放一個小占位以保持格子一致
-                                            SizedBox(height: 6),
+                                          // 如果沒有日記，放一個佔位用的 SizedBox，保持格子高度一致
+                                          const SizedBox(height: 6),
                                         ],
                                       );
-                                    }),
+                                    }
+                                   ),
                                   ),
                                 );
                               },
@@ -643,7 +672,7 @@ void _onDayTap(DateTime date) {
 
                           // legend / 詳細數字（簡潔排列）
                           Expanded(
-                            child: _StatsLegend(
+                            child: StatsLegend(
                               positive: _pos,
                               neutral: _neu,
                               negative: _neg,
@@ -669,29 +698,26 @@ void _onDayTap(DateTime date) {
   // ====== 工具 ======
   String _fmt(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
 
-  // 依 mood 給 emoji
-  static String _emoji(String? mood) {
-    if (mood == null) return '';
-    switch (mood.toLowerCase()) {
-      case 'sunny':
-      case 'positive':
-      case 'happy':
-        return '☀️';
-      case 'cloudy':
-      case 'neutral':
-        return '⛅';
-      case 'rain':
-      case 'negative':
-      case 'sad':
-        return '🌧️';
-      case 'storm':
-        return '⛈️';
-      case 'windy':
-        return '🌬️';
-      default:
-        return '';
-    }
+  String _assetForEmotion(String emotion) {
+  switch (emotion) {
+    case 'sunny':
+      return 'assets/images/emotion_sun.png';
+    case 'storm':
+      return 'assets/images/emotion_tornado.png';
+    case 'cloud':
+        return 'assets/images/emotion_cloud.png';
+    case 'lightning':
+      return 'assets/images/emotion_lightning.png';
+    case 'snowflake':
+      return 'assets/images/emotion_snowflake.png';
+    case 'rain':
+        return 'assets/images/emotion_rain.png';
+    
+    default:
+      // 如果沒有匹配到任何情緒，回傳一個預設的圖片
+      return 'assets/images/emotion_foggy.png';
   }
+}
 
   // 解析 #RRGGBB（安全）
   static Color _hexColor(String? hex, {Color fallback = const Color(0xFFE2E8D5)}) {
@@ -725,14 +751,24 @@ void _onDayTap(DateTime date) {
   }
 }
 
-// ------------------ 小元件：AI 卡 ------------------
+// ------------------ 小元件：AI 卡 (已修改) ------------------
 class _AICard extends StatelessWidget {
   final String title;
   final String content;
-  const _AICard({required this.title, required this.content});
+  final String? emotion;
+  final String? moodColor;
+
+  const _AICard({
+    required this.title,
+    required this.content,
+    this.emotion,
+    this.moodColor,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final bool hasEmotion = emotion != null && emotion!.isNotEmpty && _assetForEmotion(emotion!) != 'assets/images/emotion_cloud.png';
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -743,165 +779,70 @@ class _AICard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (hasEmotion)
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Image.asset(
+                      _assetForEmotion(emotion!),
+                      color: moodColor != null ? _hexToColor(moodColor!) : null,
+                      colorBlendMode: BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           Text(content, style: const TextStyle(fontSize: 16, height: 1.4)),
         ],
       ),
     );
   }
-}
 
-// ------------------ 圓形圖：PieMoodChart ------------------
-class PieMoodChart extends StatelessWidget {
-  final int positive;
-  final int neutral;
-  final int negative;
-
-  const PieMoodChart({
-    super.key,
-    required this.positive,
-    required this.neutral,
-    required this.negative,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final total = positive + neutral + negative;
-    if (total == 0) {
-      return Center(
-        child: Text(
-          '0',
-          style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
-        ),
-      );
+  String _assetForEmotion(String emotion) {
+    switch (emotion) {
+      case 'sunny':
+      return 'assets/images/emotion_sun.png';
+    case 'storm':
+      return 'assets/images/emotion_tornado.png';
+    case 'cloud':
+        return 'assets/images/emotion_cloud.png';
+    case 'lightning':
+      return 'assets/images/emotion_lightning.png';
+    case 'snowflake':
+      return 'assets/images/emotion_snowflake.png';
+    case 'rain':
+        return 'assets/images/emotion_rain.png';
+      default:
+        return 'assets/images/emotion_foggy.png';
     }
+  }
 
-    return CustomPaint(
-      painter: _PiePainter(positive: positive, neutral: neutral, negative: negative),
-      child: Center(
-        child: Text(
-          '$total',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
+  Color _hexToColor(String hex) {
+    final h = hex.replaceAll('#', '');
+    if (h.length != 6) return Colors.blue.shade200;
+    return Color(int.parse('FF$h', radix: 16));
   }
 }
 
-class _PiePainter extends CustomPainter {
-  final int positive;
-  final int neutral;
-  final int negative;
-
-  _PiePainter({required this.positive, required this.neutral, required this.negative});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final total = (positive + neutral + negative);
-    if (total == 0) return;
-
-    final Paint paint = Paint()..style = PaintingStyle.fill;
-    final Rect rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    double startAngle = -math.pi / 2;
-
-    final values = [positive, neutral, negative];
-    final colors = [Colors.green.shade400, Colors.blueGrey.shade400, Colors.red.shade400];
-
-    for (int i = 0; i < values.length; i++) {
-      final sweep = 2 * math.pi * (values[i] / total);
-      paint.color = colors[i];
-      canvas.drawArc(rect, startAngle, sweep, true, paint);
-      startAngle += sweep;
-    }
-
-    // 繪製內圈（切出 donut 形狀）
-    final double holeRadius = size.width * 0.32;
-    final Paint holePaint = Paint()..color = Colors.white;
-    canvas.drawCircle(Offset(size.width / 2, size.height / 2), holeRadius, holePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _PiePainter oldDelegate) {
-    return oldDelegate.positive != positive ||
-        oldDelegate.neutral != neutral ||
-        oldDelegate.negative != negative;
-  }
-}
-
-// ------------------ 統計 Legend 與數字 ------------------
-class _StatsLegend extends StatelessWidget {
-  final int positive;
-  final int neutral;
-  final int negative;
-  final int totalDays;
-  final Future<void> Function()? onRefresh;
-  final bool loading;
-
-  const _StatsLegend({
-    required this.positive,
-    required this.neutral,
-    required this.negative,
-    required this.totalDays,
-    this.onRefresh,
-    required this.loading,
-  });
-
-  double _ratio(int v, int total) {
-    if (total <= 0) return 0.0;
-    return (v / total).clamp(0.0, 1.0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final total = positive + neutral + negative;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 標題 + refresh
-        Row(
-          children: [
-            const Text('情緒占比', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            const Spacer(),
-            if (loading)
-              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-            else
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: onRefresh,
-                icon: const Icon(Icons.refresh, size: 18),
-                tooltip: '重新統計',
-              ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(total > 0 ? '已統計 $total 天' : '本月尚無日記', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-        const SizedBox(height: 6),
-
-        // 三個 legend（字級縮小）
-        _legendRow('正向', Colors.green.shade400, positive, total),
-        const SizedBox(height: 4),
-        _legendRow('中性', Colors.blueGrey.shade400, neutral, total),
-        const SizedBox(height: 4),
-        _legendRow('負向', Colors.red.shade400, negative, total),
-      ],
-    );
-  }
-
-  Widget _legendRow(String label, Color color, int count, int total) {
-    final pct = total > 0 ? (_ratio(count, total) * 100).round() : 0;
-    return Row(
-      children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
-        const SizedBox(width: 8),
-        Expanded(child: Text(label, style: const TextStyle(fontSize: 12))),
-        Text('$count 天', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
-        const SizedBox(width: 6),
-        Text('$pct%', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-}

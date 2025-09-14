@@ -20,8 +20,8 @@ class _ColorPickerScreenState extends State<ColorPickerScreen> {
     Color(0xFFFF9AD6), // 溫暖的粉
     Color(0xFFA46421), // 沉重的棕
     Color(0xFFEBEBEB), // 中性的灰
-    Color(0xFF929292), // 壓抑的深灰
-    Color(0xFF212121), // 絕望的黑
+    Color.fromARGB(255, 60, 60, 60), // 壓抑的深灰
+    Color.fromARGB(255, 0, 0, 0), // 絕望的黑
   ];
 
   int? _activeIndex;
