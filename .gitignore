@@ -1,0 +1,51 @@
+# Flutter/Dart
+.dart_tool/
+build/
+# Android
+**/android/.gradle/
+**/android/local.properties
+**/android/app/**/intermediates/
+**/android/app/**/outputs/
+**/android/app/**/debug/
+**/android/app/**/release/
+# iOS/macOS
+**/ios/Pods/
+**/ios/Flutter/*
+**/ios/**/GeneratedPluginRegistrant.*
+**/macos/Pods/
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+# 二進位/套件
+*.apk
+*.ipa
+*.so
+# Python backend
+backend/venv/
+backend/.env
+backend/db.sqlite3
+backend/media/
+__pycache__/
+*.py[cod]
+# 其他
+.idea/
+.DS_Store
+__pycache__/
+*.py[cod]
+backend/venv/
+backend/db.sqlite3
+backend/media/
+backend/.env
+.DS_Store
+.idea/
+focusbridge_app/.dart_tool/
+focusbridge_app/build/
+focusbridge_app/android/app/intermediates/
+focusbridge_app/android/app/outputs/
+focusbridge_app/macos/Flutter/ephemeral/
+**/Pods/
+*.apk
+*.so
+focusbridge_app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+focusbridge_app/ios/Runner/GeneratedPluginRegistrant.*
+focusbridge_app/macos/Flutter/GeneratedPluginRegistrant.swift
+focusbridge_app/linux/flutter/
